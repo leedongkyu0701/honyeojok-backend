@@ -1,0 +1,19 @@
+{
+  "destinations": {
+    "busan": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/busan.webp",
+    "gangneung": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/gangneung.webp",
+    "jeju": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/jeju.webp",
+    "mookho": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/mookho.webp",
+    "seoul": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/seoul.webp",
+    "jeonju": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/jeonju.webp"
+  },
+  "spots": {
+    "seoul": {
+      "gyeongbokgung-palace": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/gyeongbokgung-palace.webp",
+      "seoul-bukchon-hanok-village": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/seoul-bukchon-hanok-village.webp",
+      "namsan-seoul-tower": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/namsan-seoul-tower.webp",
+      "seoul-forest": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/seoul-forest.webp",
+      "yeouido-hangang-park": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/yeouido-hangang-park.webp"
+    }
+  }
+}
