@@ -20,11 +20,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/data-source.ts",
     "migration:generate:dev": "cross-env NODE_ENV=development npm run typeorm -- migration:generate",
+    "migration:generate:prod": "cross-env NODE_ENV=production npm run typeorm -- migration:generate",
     "migration:run:dev": "cross-env NODE_ENV=development npm run typeorm -- migration:run",
     "migration:revert:dev": "cross-env NODE_ENV=development npm run typeorm -- migration:revert",
     "migration:run:prod": "cross-env NODE_ENV=production npm run typeorm -- migration:run",
-    "seed": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/seed/seed.ts",
-    "seed:prod": "cross-env NODE_ENV=production SEED_ALLOW_PROD=true ts-node -r tsconfig-paths/register src/seed/seed.ts"
+    "seed:dev": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/seed/seed.ts",
+    "seed:prod": "cross-env NODE_ENV=production ts-node -r tsconfig-paths/register src/seed/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.972.0",
@@ -46,7 +47,7 @@
     "multer-s3": "^3.0.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
-    "pg": "^8.17.1",
+    "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "sharp": "^0.34.5",
