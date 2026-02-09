@@ -29,7 +29,16 @@ import { HealthModule } from './health/health.module';
         username: configService.get<string>('DB_USER'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
+        ssl:
+          configService.get<string>('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
         autoLoadEntities: true,
+        extra: {
+          max: 5,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 10000,
+        },
         // synchronize: true,
         // dropSchema: true,
       }),
