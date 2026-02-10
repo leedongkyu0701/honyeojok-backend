@@ -24,7 +24,11 @@ import { HealthModule } from './health/health.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get<string>('DB_URL'),
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USER'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
         ssl:
           configService.get<string>('NODE_ENV') === 'production'
             ? { rejectUnauthorized: false }
