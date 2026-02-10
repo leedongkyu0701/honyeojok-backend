@@ -12,6 +12,7 @@ import {
   ErrorCode,
   type ErrorResponseBody,
 } from '../exceptions/base.exception';
+import { Logger } from '@nestjs/common';
 
 type ApiErrorResponse = ErrorResponseBody & {
   requestId?: string;
@@ -51,6 +52,7 @@ function normalizeMessageFromResponse(
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<Request>();
@@ -68,6 +70,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof QueryFailedError) {
       // TypeORM 버전/드라이버에 따라 타입이 애매할 수 있어 최소만 사용
       const driverErr = exception.driverError as unknown as { code?: string };
+      this.logger.error(
+        `[DB] ${req.method} ${path} requestId=${requestId ?? '-'} ` +
+          `code=${driverErr?.code ?? '-'} ` +
+          `msg=${exception.message}`,
+      );
 
       // Postgres unique violation: 23505
       if (driverErr?.code === '23505') {
