@@ -5,6 +5,8 @@ import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 
 const STATE_TTL_MS = 10 * 60 * 1000; // 10분
 const COOKIE_PATH = '/auth';
+const COOKIE_SAMESITE =
+  (process.env.COOKIE_SAMESITE as 'lax' | 'none' | 'strict') || 'lax'; // 기본값은 lax
 
 interface CookieRequest extends Request {
   cookies: { [key: string]: string };
@@ -28,7 +30,7 @@ export function setOAuthStateCookie(
   res.cookie(cookieKey(provider), state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 진짜 배포때는 다시 lax로 바꾸기
+    sameSite: COOKIE_SAMESITE,
     maxAge: STATE_TTL_MS,
     path: COOKIE_PATH,
   });
