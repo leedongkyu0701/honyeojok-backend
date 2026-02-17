@@ -8,10 +8,22 @@
     "jeonju": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/destinations/jeonju.webp"
   },
   "spots": {
+    "busan": {
+      "bupyeong-kkangtong-market": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/bupyeong-kkangtong-market.webp",
+      "busan-tower": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/busan-tower.webp",
+      "gamcheon-culture-village": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/gamcheon-culture-village.webp",
+      "gukje-market": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/gukje-market.webp",
+      "gwangalli-beach": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/gwangalli-beach.webp",
+      "haedong-yonggungsa-temple": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/haedong-yonggungsa-temple.webp",
+      "haeundae-beach": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/haeundae-beach.webp",
+      "jagalchi-market": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/jagalchi-market.webp",
+      "oryukdo-skywalk": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/oryukdo-skywalk.webp",
+      "songdo-marine-cable-car": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/busan/songdo-marine-cable-car.webp"
+    },
     "seoul": {
+      "namsan-seoul-tower": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/namsan-seoul-tower.webp",
       "gyeongbokgung-palace": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/gyeongbokgung-palace.webp",
       "seoul-bukchon-hanok-village": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/seoul-bukchon-hanok-village.webp",
-      "namsan-seoul-tower": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/namsan-seoul-tower.webp",
       "seoul-forest": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/seoul-forest.webp",
       "yeouido-hangang-park": "https://pub-2c7d85aaca184cb4b664f61c82d16150.r2.dev/images/spots/seoul/yeouido-hangang-park.webp"
     }
