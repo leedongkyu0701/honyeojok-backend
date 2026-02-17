@@ -1,18 +1,20 @@
-// src/destinations/destination.entity.ts
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   OneToMany,
-  Index,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { TripRoute } from '../trip-routes/trip-route.entity';
 import { Spot } from '../spots/spot.entity';
 import { Post } from '../posts/post.entity';
 import { ProvinceGroup } from '../types/destination';
-import { ImageSource } from 'src/types/destination';
+import { ImageSource } from 'src/types/util';
+import { Tag } from 'src/tags/tag.entity';
 
-@Index(['province', 'rank'])
 @Entity('destinations')
 export class Destination {
   @PrimaryGeneratedColumn()
@@ -30,21 +32,11 @@ export class Destination {
   @Column()
   name: string;
 
+  @Column('int', { unique: true })
+  rank: number;
+
   @Column('float')
   score: number;
-
-  @Column()
-  imageUrl: string;
-
-  @Column({
-    type: 'enum',
-    enum: ImageSource,
-    nullable: true,
-  })
-  imageSource?: ImageSource;
-
-  @Column({ nullable: true })
-  imageCredit?: string;
 
   @Column('decimal')
   latitude: number;
@@ -55,13 +47,11 @@ export class Destination {
   @Column()
   summary: string;
 
-  @Column('int', { default: 0 })
-  reviewCount: number;
+  @Column({ type: 'text' })
+  description: string;
 
-  @Column('int', { unique: true })
-  rank: number;
+  // 혼여 지표 세부 항목
 
-  // 난이도 (embedded)
   @Column('int')
   food: number;
 
@@ -74,6 +64,29 @@ export class Destination {
   @Column('int')
   loneliness: number;
 
+  //이미지 관련
+
+  @Column({ nullable: true })
+  imageUrl?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ImageSource,
+    nullable: true,
+  })
+  imageSource?: ImageSource;
+
+  @Column({ nullable: true })
+  imageCredit?: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  // 관계
+
   @OneToMany(() => TripRoute, (tripRoute) => tripRoute.destination)
   tripRoutes: TripRoute[];
 
@@ -82,4 +95,8 @@ export class Destination {
 
   @OneToMany(() => Spot, (spot) => spot.destination)
   spots: Spot[];
+
+  @ManyToMany(() => Tag, (tag) => tag.destinations)
+  @JoinTable({ name: 'destination_tags' })
+  tags: Tag[];
 }

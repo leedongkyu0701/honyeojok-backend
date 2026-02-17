@@ -1,42 +1,44 @@
-// src/trip-routes/dtos/create-trip-route-item.dto.ts
+import { Type } from 'class-transformer';
 import {
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   IsNumber,
-  IsUrl,
 } from 'class-validator';
-import { TripRouteItemType } from 'src/types/trip-route';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTripRouteItemDto {
-  @ApiProperty({ enum: TripRouteItemType })
-  @IsEnum(TripRouteItemType)
-  type: TripRouteItemType;
-
   @ApiProperty()
   @IsInt()
   @Min(1)
   order: number;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ default: 3, minimum: 1, maximum: 5 })
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(5)
-  recommendedLevel: number;
+  recommendedLevel?: number;
+
+  // ✅ Spot 연결용(선택)
+  @ApiPropertyOptional({ description: '연결할 Spot slug (선택)' })
+  @IsOptional()
+  @IsString()
+  spotSlug?: string;
 
   @ApiProperty()
   @IsString()
   title: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  // ✅ 엔티티에서 필수(text)
+  @ApiProperty({ description: '상세 설명(필수)' })
   @IsString()
-  description?: string;
+  description: string;
 
+  // 커스텀 이미지/출처(선택)
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -44,25 +46,32 @@ export class CreateTripRouteItemDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  imageCredit?: string;
+
+  // 지도/주소
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   lat?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   lng?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ description: '주소(필수)' })
   @IsString()
-  address?: string;
+  address: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '10:30' })
   @IsOptional()
   @IsString()
   startTime?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '12:00' })
   @IsOptional()
   @IsString()
   endTime?: string;

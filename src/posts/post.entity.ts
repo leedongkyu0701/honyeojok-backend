@@ -5,7 +5,6 @@ import {
   ManyToOne,
   OneToMany,
   CreateDateColumn,
-  UpdateDateColumn,
   Index,
   JoinColumn,
 } from 'typeorm';
@@ -41,37 +40,42 @@ export class Post {
   @Column({ default: 0 })
   likeCount: number;
 
+  @Column({ type: 'int', default: 0 })
+  viewCount: number;
+
   @Column({ nullable: true })
   thumbnailUrl?: string;
 
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Column()
-  userId: number;
+  @Column({ nullable: true })
+  userId?: number;
 
-  @OneToMany(() => PostLike, (like) => like.post, { cascade: true })
+  @Column({ nullable: true })
+  destinationId?: number;
+
+  // 관계
+
+  @OneToMany(() => PostLike, (like) => like.post)
   likes: PostLike[];
 
-  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'userId' })
   user: User;
 
   @ManyToOne(() => Destination, (destination) => destination.posts, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
     nullable: true,
   })
   destination?: Destination;
 
-  @OneToMany(() => PostImage, (image) => image.post, { cascade: true })
+  @OneToMany(() => PostImage, (image) => image.post)
   images: PostImage[];
 
-  @OneToMany(() => Comment, (comment) => comment.post, { cascade: true })
+  @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
   @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }

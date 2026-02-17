@@ -9,12 +9,6 @@ export const IMAGE_PRESETS = {
     fit: 'inside',
     quality: 80,
   },
-  THUMBNAIL: {
-    width: 400,
-    height: 400,
-    fit: 'cover',
-    quality: 65,
-  },
 } as const;
 
 const MAX_IMAGE_PIXELS = 20_000_000; // 20MP

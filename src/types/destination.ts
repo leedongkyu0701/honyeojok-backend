@@ -6,11 +6,3 @@ export enum ProvinceGroup {
   GYEONGSANG = 'GYEONGSANG',
   JEJU = 'JEJU',
 }
-
-export enum ImageSource {
-  UNSPLASH = 'UNSPLASH',
-  KTO = 'KTO', // 한국관광공사
-  OWNER = 'OWNER', // 업체/사장님 제공
-  USER = 'USER', // 유저 업로드
-  ETC = 'ETC',
-}

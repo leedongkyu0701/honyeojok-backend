@@ -1,7 +1,7 @@
-// src/trip-routes/trip-routes.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { In } from 'typeorm';
 import { TripRoute } from './trip-route.entity';
 import { Destination } from '../destinations/destination.entity';
 import { CreateTripRouteDto } from './dtos/create-trip-route.dto';
@@ -10,6 +10,7 @@ import { TripRouteDetailResponse } from './dtos/trip-routes-detail.response';
 import { Bookmark } from './bookmark.entity';
 import { User } from '../user/user.entity';
 import { Tag } from '../tags/tag.entity';
+import { Spot } from 'src/spots/spot.entity';
 import { TripRouteDay } from './trip-routes-day.entity';
 import { TripRouteItem } from './trip-route-item.entity';
 import { DataSource } from 'typeorm';
@@ -30,21 +31,13 @@ export class TripRoutesService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-
-    @InjectRepository(Tag)
-    private readonly tagRepo: Repository<Tag>,
-
-    @InjectRepository(TripRouteDay)
-    private readonly tripRouteDayRepo: Repository<TripRouteDay>,
-
-    @InjectRepository(TripRouteItem)
-    private readonly tripRouteItemRepo: Repository<TripRouteItem>,
   ) {}
 
   async findHotRoutes(): Promise<TripRoutesCardResponse[]> {
     const routes = await this.tripRouteRepo.find({
-      order: { bookmarkCount: 'DESC' },
-      take: 5,
+      order: { bookmarkCount: 'DESC', id: 'DESC' },
+      relations: ['destination'],
+      take: 6,
     });
     return routes.map((route) => ({
       id: route.id,
@@ -52,7 +45,7 @@ export class TripRoutesService {
       title: route.title,
       summary: route.summary,
       days: route.days,
-      region: route.region,
+      regionSlug: route.destination.slug,
       bookmarkCount: route.bookmarkCount,
     }));
   }
@@ -61,6 +54,7 @@ export class TripRoutesService {
   async findByRegion(region: string): Promise<TripRoutesCardResponse[]> {
     const destination = await this.destinationRepo.findOne({
       where: { slug: region },
+      select: ['id', 'slug'],
     });
 
     if (!destination) {
@@ -74,7 +68,8 @@ export class TripRoutesService {
       where: {
         destination: destination,
       },
-      order: { bookmarkCount: 'DESC' },
+      order: { bookmarkCount: 'DESC', id: 'DESC' },
+      relations: ['destination'],
     });
 
     return routes.map((route) => ({
@@ -83,7 +78,7 @@ export class TripRoutesService {
       title: route.title,
       summary: route.summary,
       days: route.days,
-      region: route.region,
+      regionSlug: route.destination.slug,
       bookmarkCount: route.bookmarkCount,
     }));
   }
@@ -96,6 +91,7 @@ export class TripRoutesService {
   ): Promise<TripRouteDetailResponse> {
     const destination = await this.destinationRepo.findOne({
       where: { slug: region },
+      select: ['id', 'slug'],
     });
 
     if (!destination) {
@@ -110,10 +106,8 @@ export class TripRoutesService {
       .leftJoinAndSelect('route.tags', 'tag')
       .leftJoinAndSelect('route.daysPlan', 'day')
       .leftJoinAndSelect('day.items', 'item')
+      .leftJoinAndSelect('item.spot', 'spot')
       .where('route.slug = :slug', { slug })
-      .andWhere('route.destinationId = :destinationId', {
-        destinationId: destination.id,
-      })
       .orderBy('day.dayNumber', 'ASC')
       .addOrderBy('item.order', 'ASC')
       .getOne();
@@ -126,7 +120,7 @@ export class TripRoutesService {
     }
 
     let bookmarkedByMe = false;
-    // console.log('userId:', userId);
+
     if (userId) {
       const existingBookmark = await this.bookmarkRepo.findOne({
         where: {
@@ -143,14 +137,15 @@ export class TripRoutesService {
     return {
       id: route.id,
       slug: route.slug,
-      region: route.region,
       title: route.title,
       summary: route.summary,
       days: route.days,
       bookmarkCount: route.bookmarkCount,
       bookmarkedByMe,
+      honyeoCost: route.honyeoCost ?? null,
 
       tags: (route.tags ?? []).map((t) => ({
+        id: t.id,
         slug: t.slug,
         label: t.label,
       })),
@@ -158,127 +153,153 @@ export class TripRoutesService {
       daysPlan: (route.daysPlan ?? []).map((d) => ({
         id: d.id,
         dayNumber: d.dayNumber,
-        title: d.title ?? undefined,
-        note: d.note ?? undefined,
+        title: d.title,
+        note: d.note,
 
         items: (d.items ?? []).map((i) => ({
           id: i.id,
-          type: i.type,
           order: i.order,
           recommendedLevel: i.recommendedLevel,
           title: i.title,
-          description: i.description ?? undefined,
-          imageUrl: i.imageUrl ?? undefined,
-          lat: i.lat ?? undefined,
-          lng: i.lng ?? undefined,
-          address: i.address ?? undefined,
-          startTime: i.startTime ?? undefined,
-          endTime: i.endTime ?? undefined,
-          externalUrl: i.externalUrl ?? undefined,
+          description: i.description,
+          imageUrl: i.imageUrl ?? null,
+          imageCredit: i.imageCredit ?? null,
+          lat: Number(i.lat) || null,
+          lng: Number(i.lng) || null,
+          address: i.address,
+          startTime: i.startTime ?? null,
+          endTime: i.endTime ?? null,
+          externalUrl: i.externalUrl ?? null,
+
+          spot: i.spot
+            ? {
+                id: i.spot.id,
+                slug: i.spot.slug,
+              }
+            : undefined,
         })),
       })),
     };
   }
 
-  async createOne(data: CreateTripRouteDto) {
-    return this.dataSource.transaction(async (manager) => {
-      const destination = await manager.findOne(Destination, {
-        where: { slug: data.region },
+  async createOne(dto: CreateTripRouteDto) {
+    return this.dataSource.transaction(async (m) => {
+      const destinationRepo = m.getRepository(Destination);
+      const tripRouteRepo = m.getRepository(TripRoute);
+      const dayRepo = m.getRepository(TripRouteDay);
+      const itemRepo = m.getRepository(TripRouteItem);
+      const tagRepo = m.getRepository(Tag);
+      const spotRepo = m.getRepository(Spot);
+
+      const destination = await destinationRepo.findOne({
+        where: { slug: dto.destinationSlug },
       });
 
       if (!destination) {
         throw BaseException.notFound(
-          `Destination with slug ${data.region} not found`,
+          'Destination not found',
           ErrorCode.RESOURCE_NOT_FOUND,
         );
       }
-      // 1. 부모 먼저 저장
-      const route = manager.create(TripRoute, {
-        slug: data.slug,
-        title: data.title,
-        summary: data.summary,
-        days: data.days,
-        region: data.region,
+      // 1. 태그들 조회
+      const tags = dto.tagSlugs?.length
+        ? await tagRepo.find({ where: { slug: In(dto.tagSlugs) } })
+        : [];
+
+      if (dto.tagSlugs?.length && tags.length !== dto.tagSlugs.length) {
+        const found = new Set(tags.map((t) => t.slug));
+        const missing = dto.tagSlugs.filter((s) => !found.has(s));
+        throw new BadRequestException(
+          `Invalid tag slugs: ${missing.join(', ')}`,
+        );
+      }
+
+      // 2. 여행 루트 생성
+      const tripRoute = tripRouteRepo.create({
+        slug: dto.slug,
+        title: dto.title,
+        summary: dto.summary,
+        days: dto.days,
         destination: destination,
         bookmarkCount: 0,
+        honyeoCost: dto.honyeoCost,
+        tags: tags,
       });
-      const savedRoute = await manager.save(route);
 
-      // 2. tags 저장
-      if (data.tagSlugs && data.tagSlugs.length > 0) {
-        const tags = await manager.find(Tag, {
-          where: data.tagSlugs.map((slug) => ({ slug })),
+      await tripRouteRepo.save(tripRoute);
+
+      // 2.5) SpotSlug들 미리 로드(N+1 방지)
+      const spotSlugs = (dto.daysPlan ?? [])
+        .flatMap((d) => d.items ?? [])
+        .map((it) => it.spotSlug)
+        .filter((v): v is string => !!v);
+
+      const spotMap = new Map<string, Spot>();
+      if (spotSlugs.length) {
+        const spots = await spotRepo.find({
+          where: { slug: In([...new Set(spotSlugs)]) },
         });
-
-        if (tags.length !== data.tagSlugs.length) {
-          throw BaseException.badRequest(
-            `One or more tags not found`,
-            ErrorCode.BAD_REQUEST,
-          );
-        }
-        savedRoute.tags = tags;
-        await manager.save(savedRoute);
+        for (const s of spots) spotMap.set(s.slug, s);
       }
 
-      // 3. daysPlan 저장
-      const days = data.daysPlan.map((d) => {
-        const day = manager.create(TripRouteDay, {
-          dayNumber: d.dayNumber,
-          title: d.title,
-          note: d.note,
-          tripRoute: savedRoute,
+      // 3. daysPlan 생성
+      const daysPlanEntities: TripRouteDay[] = [];
+      for (const dayDto of dto.daysPlan ?? []) {
+        const dayEntity = dayRepo.create({
+          dayNumber: dayDto.dayNumber,
+          title: dayDto.title,
+          note: dayDto.note,
+          tripRoute: tripRoute,
         });
-        return day;
-      });
-      const savedDays = await manager.save(days);
+        await dayRepo.save(dayEntity);
 
-      // 4. items 저장
-      const dayMap = new Map(savedDays.map((d) => [d.dayNumber, d]));
-      for (const d of data.daysPlan) {
-        const dayEntity = dayMap.get(d.dayNumber);
-        if (!dayEntity) continue;
-        const orders = d.items.map((i) => i.order);
-        const uniqueOrders = new Set(orders);
-        if (orders.length !== uniqueOrders.size) {
-          throw BaseException.badRequest(
-            `Duplicate order values in day ${d.dayNumber}`,
-            ErrorCode.BAD_REQUEST,
-          );
-        }
+        // 4. 각 day의 items 생성
+        const itemEntities: TripRouteItem[] = [];
+        for (const itemDto of dayDto.items ?? []) {
+          const spot = itemDto.spotSlug
+            ? spotMap.get(itemDto.spotSlug)
+            : undefined;
+          if (itemDto.spotSlug && !spot) {
+            throw BaseException.notFound(
+              `Spot not found: ${itemDto.spotSlug}`,
+              ErrorCode.RESOURCE_NOT_FOUND,
+            );
+          }
 
-        const items = d.items.map((i) => {
-          const item = manager.create(TripRouteItem, {
+          const imageUrl = spot?.imageUrl ?? itemDto.imageUrl;
+          const imageCredit = spot?.imageCredit ?? itemDto.imageCredit;
+          const lat = spot?.lat ?? itemDto.lat;
+          const lng = spot?.lng ?? itemDto.lng;
+          const address = spot?.address ?? itemDto.address;
+
+          const itemEntity = itemRepo.create({
+            order: itemDto.order,
+            recommendedLevel: itemDto.recommendedLevel,
+            title: itemDto.title,
+            description: itemDto.description,
+            imageUrl: imageUrl,
+            imageCredit: imageCredit,
+            lat: lat,
+            lng: lng,
+            address: address,
+            startTime: itemDto.startTime,
+            endTime: itemDto.endTime,
+            externalUrl: itemDto.externalUrl,
+            spot: spot ?? undefined,
             day: dayEntity,
-            type: i.type,
-            order: i.order,
-            recommendedLevel: i.recommendedLevel,
-            title: i.title,
-            description: i.description,
-            imageUrl: i.imageUrl,
-            lat: i.lat,
-            lng: i.lng,
-            address: i.address,
-            startTime: i.startTime,
-            endTime: i.endTime,
-            externalUrl: i.externalUrl,
           });
-          return item;
-        });
-        await manager.save(items);
-      }
+          itemEntities.push(itemEntity);
+        }
+        if (itemEntities.length) {
+          await itemRepo.save(itemEntities);
+        }
+        dayEntity.items = itemEntities;
 
-      return savedRoute;
-    });
-  }
-
-  async createMany(data: CreateTripRouteDto[]) {
-    return this.dataSource.transaction(async () => {
-      const createdRoutes: TripRoute[] = [];
-      for (const dto of data) {
-        const route = await this.createOne(dto);
-        createdRoutes.push(route);
+        daysPlanEntities.push(dayEntity);
       }
-      return createdRoutes;
+      tripRoute.daysPlan = daysPlanEntities;
+
+      return tripRouteRepo.save(tripRoute);
     });
   }
 

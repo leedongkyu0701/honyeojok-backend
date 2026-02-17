@@ -1,59 +1,68 @@
-// src/trip-routes/trip-route-item.entity.ts
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { TripRouteDay } from './trip-routes-day.entity';
-import { TripRouteItemType } from '../types/trip-route';
+import { Spot } from 'src/spots/spot.entity';
 
-@Entity()
-@Index(['day', 'order'], { unique: true })
+@Entity('trip_route_items')
+@Index(['dayId', 'order'], { unique: true })
 export class TripRouteItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'enum', enum: TripRouteItemType })
-  type: TripRouteItemType;
-
   @Column('int')
-  order: number; // 1,2,3... (그날 순서)
+  order: number; // 하루 일정 내에서의 순서
 
-  @Column('int')
-  recommendedLevel: number; // 추천도 1~5
+  @Column('int', { default: 3 })
+  recommendedLevel: number;
 
-  // "이름/설명"은 커스텀 입력 가능하게
   @Column()
   title: string;
 
-  @Column({ type: 'text', nullable: true })
-  description?: string;
+  @Column({ type: 'text' })
+  description: string;
 
-  // 장소 이미지(커스텀일 때)
+  // 장소 이미지(스팟 연결이 아닐경우 커스텀 이미지)
   @Column({ nullable: true })
   imageUrl?: string;
 
-  // 지도용(커스텀일 때)
-  @Column('float', { nullable: true })
+  @Column({ nullable: true })
+  imageCredit?: string;
+
+  @Column('double precision', { nullable: true })
   lat?: number;
 
-  @Column('float', { nullable: true })
+  @Column('double precision', { nullable: true })
   lng?: number;
 
-  @Column({ nullable: true })
-  address?: string;
+  @Column()
+  address: string;
 
   @Column({ nullable: true })
-  startTime?: string; // "10:30"
+  startTime?: string;
 
   @Column({ nullable: true })
   endTime?: string;
 
-  @ManyToOne(() => TripRouteDay, (day) => day.items, { onDelete: 'CASCADE' })
-  day: TripRouteDay;
-
   @Column({ nullable: true })
   externalUrl?: string;
+
+  @Column()
+  dayId: number;
+
+  @Column({ nullable: true })
+  spotId?: number;
+
+  @ManyToOne(() => TripRouteDay, (day) => day.items, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'dayId' })
+  day: TripRouteDay;
+
+  @ManyToOne(() => Spot, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'spotId' })
+  spot?: Spot; // spot 에 있는 아이템일시 가져오기 (spotSlug dto에 추가)
 }

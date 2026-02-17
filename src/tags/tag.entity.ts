@@ -1,4 +1,3 @@
-// src/trip-routes/trip-route-tag.entity.ts
 import {
   Entity,
   Column,
@@ -8,6 +7,7 @@ import {
 } from 'typeorm';
 import { TripRoute } from '../trip-routes/trip-route.entity';
 import { Spot } from 'src/spots/spot.entity';
+import { Destination } from 'src/destinations/destination.entity';
 
 @Entity('tags')
 export class Tag {
@@ -16,14 +16,17 @@ export class Tag {
 
   @Index({ unique: true })
   @Column()
-  slug: string; // "sea", "emotional" 같은 고정값 추천
+  slug: string;
 
   @Column()
-  label: string; // "바다", "감성"
+  label: string;
 
   @ManyToMany(() => TripRoute, (route) => route.tags)
   tripRoutes: TripRoute[];
 
   @ManyToMany(() => Spot, (spot) => spot.tags)
   spots: Spot[];
+
+  @ManyToMany(() => Destination, (destination) => destination.tags)
+  destinations: Destination[];
 }

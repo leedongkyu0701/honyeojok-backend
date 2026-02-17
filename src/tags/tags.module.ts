@@ -5,8 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Tag } from './tag.entity';
 import { TripRoute } from '../trip-routes/trip-route.entity';
 import { Spot } from 'src/spots/spot.entity';
+import { Destination } from 'src/destinations/destination.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([Tag, TripRoute, Spot])],
+  imports: [TypeOrmModule.forFeature([Tag, TripRoute, Spot, Destination])],
   providers: [TagsService],
   controllers: [TagsController],
   exports: [TagsService],

@@ -1,4 +1,3 @@
-// src/trip-routes/trip-route-day.entity.ts
 import {
   Entity,
   Column,
@@ -6,30 +5,35 @@ import {
   ManyToOne,
   OneToMany,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { TripRoute } from './trip-route.entity';
 import { TripRouteItem } from './trip-route-item.entity';
 
-@Entity()
-@Index(['tripRoute', 'dayNumber'], { unique: true })
+@Entity('trip_route_days')
+@Index(['tripRouteId', 'dayNumber'], { unique: true })
 export class TripRouteDay {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column('int')
-  dayNumber: number; // 1,2,3...
+  dayNumber: number;
 
-  @Column({ nullable: true })
-  title?: string; // "서귀포 감성 코스" 같은 소제목
+  @Column()
+  title: string;
 
-  @Column({ type: 'text', nullable: true })
-  note?: string; // 그날 팁/주의사항
+  @Column({ type: 'text' })
+  note: string; // 그날 팁/주의사항
+
+  @Column()
+  tripRouteId: number;
 
   @ManyToOne(() => TripRoute, (route) => route.daysPlan, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'tripRouteId' })
   tripRoute: TripRoute;
 
-  @OneToMany(() => TripRouteItem, (item) => item.day, { cascade: true })
+  @OneToMany(() => TripRouteItem, (item) => item.day)
   items: TripRouteItem[];
 }

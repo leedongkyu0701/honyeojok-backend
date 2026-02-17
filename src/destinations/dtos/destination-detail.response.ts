@@ -1,19 +1,23 @@
 import { TripRoutesCardResponse } from 'src/trip-routes/dtos/trip-routes-card.response';
 import { SpotCardResponse } from 'src/spots/dtos/spot-card.response';
 import { ProvinceGroup } from 'src/types/destination';
-import { ImageSource } from 'src/types/destination';
+import { ImageSource } from 'src/types/util';
+import type { TagResponse } from 'src/types/tag';
 
-export class DestinationByRegionResponse {
+export class DestinationDetailResponse {
   id: number;
   slug: string;
   name: string;
-
-  score: number;
   province: ProvinceGroup;
 
-  imageUrl: string;
-  imageSource?: ImageSource;
-  imageCredit?: string;
+  score: number;
+
+  imageUrl: string | null;
+  imageSource: ImageSource | null;
+  imageCredit: string | null;
+
+  summary: string;
+  description: string;
 
   difficulty: {
     food: number;
@@ -21,8 +25,8 @@ export class DestinationByRegionResponse {
     safety: number;
     loneliness: number;
   };
-  summary: string;
 
+  tags: TagResponse[];
   routes: TripRoutesCardResponse[];
   spots: SpotCardResponse[];
 }

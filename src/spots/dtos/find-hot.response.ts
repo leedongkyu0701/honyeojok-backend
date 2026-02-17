@@ -1,8 +1,10 @@
 import { SpotCardResponse } from './spot-card.response';
+
 export class FindHotSpotsResponse {
-  healing: SpotCardResponse[];
-  foodie: SpotCardResponse[];
-  activity: SpotCardResponse[];
-  honsool: SpotCardResponse[];
+  food: SpotCardResponse[];
   cafe: SpotCardResponse[];
+  drink: SpotCardResponse[];
+  activity: SpotCardResponse[];
+  nature: SpotCardResponse[];
+  etc: SpotCardResponse[];
 }

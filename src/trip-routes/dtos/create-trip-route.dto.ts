@@ -16,9 +16,9 @@ export class CreateTripRouteDto {
   @IsString()
   slug: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: '소속 여행지 slug (예: jeju)' })
   @IsString()
-  region: string;
+  destinationSlug: string;
 
   @ApiProperty()
   @IsString()
@@ -28,12 +28,17 @@ export class CreateTripRouteDto {
   @IsString()
   summary: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: '일수(보통 daysPlan.length와 일치해야 함)' })
   @IsInt()
   @Min(1)
   days: number;
 
-  // ✅ 태그는 slug 배열로 받기 (ex: ["sea","emotional"])
+  @ApiPropertyOptional({ description: '혼여 예상 비용', example: 500000 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  honyeoCost?: number;
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()

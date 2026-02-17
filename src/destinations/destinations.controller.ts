@@ -1,4 +1,3 @@
-// src/destinations/destinations.controller.ts
 import {
   Controller,
   Get,
@@ -38,10 +37,10 @@ export class DestinationsController {
   }
 
   @Get('recommended')
-  @ApiOperation({ summary: '추천 여행지 조회' })
+  @ApiOperation({ summary: '월간 추천 여행지 조회' })
   @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
   findRecommended() {
-    return this.service.findRecommanded();
+    return this.service.findRecommended();
   }
 
   @Get('map')
@@ -67,8 +66,8 @@ export class DestinationsController {
   @Post()
   @UseGuards(JwtAccessGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: '여행지 데이터 일괄 생성' })
-  create(@Body() body: CreateDestinationDto[]) {
-    return this.service.createMany(body);
+  @ApiOperation({ summary: '여행지 단건 생성(관리자)' })
+  create(@Body() dto: CreateDestinationDto) {
+    return this.service.createOne(dto);
   }
 }

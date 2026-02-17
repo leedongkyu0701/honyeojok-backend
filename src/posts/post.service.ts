@@ -14,7 +14,7 @@ import { PostCardResponse } from './dtos/post-card.response';
 import { PostDetailResponse } from './dtos/post-detail.response';
 import { PostLike } from './post_like.entity';
 import { ConfigService } from '@nestjs/config';
-
+import { FindPostsQuery } from './dtos/find-posts.dto';
 import { R2Service } from 'src/common/r2/r2.service';
 import { randomUUID } from 'crypto';
 import { processImageBuffer } from 'src/common/process-image';
@@ -84,6 +84,7 @@ export class PostService {
           region: createPostDto.regionSlug,
           user,
           likeCount: 0,
+          viewCount: 0,
         });
         await manager.save(post);
 
@@ -115,7 +116,7 @@ export class PostService {
             }
 
             const postImage = manager.create(PostImage, {
-              url: imageUrl,
+              imageUrl: imageUrl,
               post,
             });
             postImages.push(postImage);
@@ -136,6 +137,7 @@ export class PostService {
           nickName: post.user.nickName,
           type: post.type,
           likeCount: post.likeCount,
+          viewCount: post.viewCount,
           thumbnailUrl: post.thumbnailUrl,
         };
       });
@@ -167,7 +169,9 @@ export class PostService {
     // 1️⃣ R2 이미지 삭제
     await Promise.allSettled(
       post.images.map((img) =>
-        this.r2Service.deleteImage(this.r2Service.extractKeyFromUrl(img.url)),
+        this.r2Service.deleteImage(
+          this.r2Service.extractKeyFromUrl(img.imageUrl),
+        ),
       ),
     );
   }
@@ -178,19 +182,19 @@ export class PostService {
         try {
           await this.r2Service.deleteImage(key);
         } catch (err) {
-          console.error(`Failed to delete image with key ${key}:`, err);
+          console.error('Failed to rollback image:', key, err);
         }
       }),
     );
   }
 
   async findPosts(
-    page: number,
-    type?: PostType,
-    searchTerm?: string,
+    query: FindPostsQuery,
   ): Promise<{ posts: PostCardResponse[]; totalPages: number }> {
-    const take = 10;
+    const page = Math.max(1, query.page ?? 1);
+    const take = Math.min(10, Math.max(1, query.take ?? 10));
     const skip = (page - 1) * take;
+    const { type, q: searchTerm } = query;
 
     const queryBuilder = this.postRepo
       .createQueryBuilder('post')
@@ -221,6 +225,7 @@ export class PostService {
       createdAt: post.createdAt,
       nickName: post.user.nickName,
       likeCount: post.likeCount,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
     }));
     return { posts: data, totalPages: Math.ceil(total / take) };
@@ -230,7 +235,7 @@ export class PostService {
     const posts = await this.postRepo.find({
       where: { region: regionSlug, isDeleted: false },
       relations: ['user', 'images'],
-      order: { createdAt: 'DESC' },
+      order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
     });
 
@@ -242,6 +247,7 @@ export class PostService {
       nickName: post.user.nickName,
       likeCount: post.likeCount,
       type: post.type,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
     }));
     return data;
@@ -249,7 +255,7 @@ export class PostService {
 
   async findPostById(
     postId: number,
-    userId: number,
+    userId?: number,
   ): Promise<PostDetailResponse> {
     const post = await this.postRepo.findOne({
       where: { id: postId, isDeleted: false },
@@ -263,36 +269,41 @@ export class PostService {
       );
     }
 
-    let likedByMe = false;
-    const existingLike = await this.postLikeRepo.findOne({
-      where: { post: { id: postId }, user: { id: userId } },
-      relations: ['post', 'user'],
-    });
-
-    if (existingLike) {
-      likedByMe = true;
-    }
+    const likedByMe = userId
+      ? await this.postLikeRepo.exists({
+          where: { postId, userId },
+        })
+      : false;
 
     return {
       id: post.id,
       title: post.title,
       region: post.region,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user?.nickName,
       content: post.content,
       type: post.type,
       rating: post.rating,
       likeCount: post.likeCount,
       likedByMe,
-      imageUrls: post.images?.map((image) => image.url),
+      imageUrls: post.images?.map((image) => image.imageUrl) ?? [],
+      viewCount: post.viewCount,
     };
+  }
+
+  async incrementViewCount(postId: number): Promise<void> {
+    await this.postRepo.increment(
+      { id: postId, isDeleted: false },
+      'viewCount',
+      1,
+    );
   }
 
   async findBestPosts(): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
       relations: ['user', 'images'],
       where: { isDeleted: false },
-      order: { likeCount: 'DESC' },
+      order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
     });
     return posts.map((post) => ({
@@ -303,6 +314,7 @@ export class PostService {
       createdAt: post.createdAt,
       nickName: post.user.nickName,
       likeCount: post.likeCount,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
     }));
   }
@@ -484,14 +496,13 @@ export class PostService {
         );
       }
 
-      const existingLike = await manager.findOne(PostLike, {
-        where: { post: { id: postId }, user: { id: userId } },
-        relations: ['post', 'user'],
+      const existingLike = await manager.exists(PostLike, {
+        where: { postId, userId },
       });
 
       if (existingLike) {
         // 이미 좋아요가 눌러져 있으면 좋아요 취소
-        await manager.remove(existingLike);
+        await manager.delete(PostLike, { postId, userId });
         await manager.decrement(Post, { id: postId }, 'likeCount', 1);
         const updatedPost = await manager.findOne(Post, {
           where: { id: postId, isDeleted: false },

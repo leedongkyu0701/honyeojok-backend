@@ -20,7 +20,7 @@ export class User {
   id: number;
 
   @Column({ type: 'varchar', nullable: true })
-  email: string | null;
+  email?: string;
 
   @Column({ type: 'enum', enum: AuthProvider })
   provider: AuthProvider;
@@ -38,7 +38,7 @@ export class User {
   role: UserRole;
 
   @Column({ type: 'varchar', nullable: true })
-  refreshToken: string | null;
+  refreshToken?: string | null;
 
   @OneToMany(() => Post, (post) => post.user)
   posts: Post[];

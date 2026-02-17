@@ -77,7 +77,7 @@ export class UserService {
 
     return {
       id: user.id,
-      email: user.email,
+      email: user.email ?? null,
       nickName: user.nickName,
       provider: user.provider,
       createdAt: user.createdAt,
@@ -153,7 +153,7 @@ export class UserService {
     }
     const skip = (page - 1) * limit;
     const [posts, total] = await this.postRepository.findAndCount({
-      where: { user: { id: userId } },
+      where: { user: { id: userId }, isDeleted: false },
       skip,
       take: limit,
       order: { createdAt: 'DESC' },
@@ -165,6 +165,7 @@ export class UserService {
       region: post.region,
       nickName: user.nickName,
       likeCount: post.likeCount,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
       type: post.type,
       createdAt: post.createdAt,
@@ -193,25 +194,26 @@ export class UserService {
       );
 
     const skip = (page - 1) * limit;
-    const [bookmarks, total] = await this.bookmarkRepository.findAndCount({
-      where: { user: { id: userId } },
-      relations: ['tripRoute'],
-      skip,
-      take: limit,
-      order: { createdAt: 'DESC' },
-    });
+    const [bookmarks, total] = await this.bookmarkRepository
+      .createQueryBuilder('bookmark')
+      .leftJoinAndSelect('bookmark.tripRoute', 'route')
+      .leftJoinAndSelect('route.destination', 'destination')
+      .where('bookmark.userId = :userId', { userId })
+      .orderBy('bookmark.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
 
     const tripRoutesCards = bookmarks.map((bookmark) => {
-      const tripRoute = bookmark.tripRoute;
+      const route = bookmark.tripRoute;
       return {
-        id: tripRoute.id,
-        title: tripRoute.title,
-        region: tripRoute.region,
-        createdAt: tripRoute.createdAt,
-        slug: tripRoute.slug,
-        summary: tripRoute.summary,
-        days: tripRoute.days,
-        bookmarkCount: tripRoute.bookmarkCount,
+        id: route.id,
+        slug: route.slug,
+        title: route.title,
+        summary: route.summary,
+        days: route.days,
+        regionSlug: route.destination.slug,
+        bookmarkCount: route.bookmarkCount,
       };
     });
 

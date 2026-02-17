@@ -12,41 +12,27 @@ export class TagsService {
     private readonly tagRepo: Repository<Tag>,
   ) {}
 
-  async createMany(dto: CreateTagDto[]): Promise<TagResponse[]> {
-    const createdTags: TagResponse[] = [];
-
-    for (const tagDto of dto) {
-      const existingTag = await this.tagRepo.findOne({
-        where: { slug: tagDto.slug },
-      });
-      if (existingTag) {
-        throw BaseException.badRequest(
-          `Tag with slug '${tagDto.slug}' already exists`,
-          ErrorCode.BAD_REQUEST,
-        );
-      }
-
-      const tag = this.tagRepo.create({
-        slug: tagDto.slug,
-        label: tagDto.label,
-      });
-      const savedTag = await this.tagRepo.save(tag);
-      createdTags.push({
-        id: savedTag.id,
-        slug: savedTag.slug,
-        label: savedTag.label,
-      });
+  async createOne(dto: CreateTagDto): Promise<TagResponse> {
+    const existingTag = await this.tagRepo.findOne({
+      where: { slug: dto.slug },
+    });
+    if (existingTag) {
+      throw BaseException.badRequest(
+        `Tag with slug '${dto.slug}' already exists`,
+        ErrorCode.BAD_REQUEST,
+      );
     }
 
-    return createdTags;
-  }
-
-  async findAll(): Promise<TagResponse[]> {
-    const tags = await this.tagRepo.find({
-      order: { label: 'ASC' },
+    const tag = this.tagRepo.create({
+      slug: dto.slug,
+      label: dto.label,
     });
-
-    return tags.map((t) => ({ id: t.id, slug: t.slug, label: t.label }));
+    const savedTag = await this.tagRepo.save(tag);
+    return {
+      id: savedTag.id,
+      slug: savedTag.slug,
+      label: savedTag.label,
+    };
   }
 
   async remove(slug: string): Promise<{ ok: true }> {

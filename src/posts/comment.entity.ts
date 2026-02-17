@@ -7,6 +7,7 @@ import {
   Index,
   OneToMany,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Post } from './post.entity';
@@ -51,4 +52,7 @@ export class Comment {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

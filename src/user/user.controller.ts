@@ -38,7 +38,7 @@ export class UserController {
     @CurrentUser() user: JwtUser,
     @Query() query: PaginationQueryDto,
   ) {
-    return this.userService.getUserPosts(user.id, query.page, query.limit);
+    return this.userService.getUserPosts(user.id, query.page, query.take);
   }
 
   @UseGuards(JwtAccessGuard)
@@ -49,6 +49,6 @@ export class UserController {
     @CurrentUser() user: JwtUser,
     @Query() query: PaginationQueryDto,
   ) {
-    return this.userService.getUserBookmarks(user.id, query.page, query.limit);
+    return this.userService.getUserBookmarks(user.id, query.page, query.take);
   }
 }

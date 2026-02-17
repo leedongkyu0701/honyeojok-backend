@@ -1,4 +1,3 @@
-// auth/dto/social-login.dto.ts
 import { IsEnum, IsString, IsEmail, IsOptional } from 'class-validator';
 import { AuthProvider } from 'src/types/user';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';

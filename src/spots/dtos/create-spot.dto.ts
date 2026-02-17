@@ -1,14 +1,20 @@
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsUrl,
+  ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ImageSource } from 'src/types/destination';
+import { ImageSource } from 'src/types/util';
+import { SpotCategory } from 'src/types/spot';
+import { TagGroup } from 'src/types/tag';
 
 export class CreateSpotDto {
   @ApiProperty()
@@ -21,57 +27,84 @@ export class CreateSpotDto {
   @IsNotEmpty()
   slug: string;
 
-  // 한 줄 소개 (카드용)
-  @ApiPropertyOptional()
+  @ApiProperty()
   @IsString()
-  @IsOptional()
-  note?: string;
+  @IsNotEmpty()
+  summary: string;
 
-  // 상세 설명
+  @ApiPropertyOptional({ enum: SpotCategory })
+  @IsOptional()
+  @IsEnum(SpotCategory)
+  category: SpotCategory;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
   description: string;
 
-  @ApiPropertyOptional()
-  @IsUrl()
+  @ApiPropertyOptional({ description: '혼여 팁(선택)' })
   @IsOptional()
-  imageUrl?: string;
+  @IsString()
+  honyeoTip?: string;
 
   @ApiPropertyOptional()
-  @IsEnum(ImageSource)
   @IsOptional()
+  @IsUrl()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ enum: ImageSource })
+  @IsOptional()
+  @IsEnum(ImageSource)
   imageSource?: ImageSource;
 
   @ApiPropertyOptional()
-  @IsString()
   @IsOptional()
+  @IsString()
   imageCredit?: string;
 
   @ApiPropertyOptional()
-  @IsString()
   @IsOptional()
+  @IsString()
   address?: string;
 
   @ApiPropertyOptional()
-  @IsUrl()
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUrl()
   externalUrl?: string;
 
   // 연결할 Destination slug
-  @ApiProperty()
+  @ApiProperty({ description: '소속 여행지 slug' })
   @IsString()
   @IsNotEmpty()
-  regionSlug: string;
+  destinationSlug: string;
 
-  // ✅ 태그는 slug 배열로 받기 (ex: ["sea","emotional"])
-  @ApiPropertyOptional({ type: [String] })
+  // 태그는 slug 배열(최대 3개)
+  @ApiPropertyOptional({
+    enum: TagGroup,
+    isArray: true,
+    example: ['healing', 'sea'],
+  })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  tagSlugs: string[];
+  @ArrayUnique()
+  @ArrayMaxSize(3)
+  @IsEnum(TagGroup, { each: true })
+  tagSlugs?: TagGroup[];
 
-  @ApiProperty()
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
   @IsBoolean()
-  isRecommended: boolean;
+  isRecommended?: boolean;
 }

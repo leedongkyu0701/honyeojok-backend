@@ -22,6 +22,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
+import { JwtOptionalGuard } from 'src/auth/guards/jwt-optional.guard';
 
 @ApiTags('Community')
 @Controller('posts')
@@ -56,14 +57,14 @@ export class PostController {
     @Body() createPostDto: CreatePostDto,
     @UploadedFiles() images?: Express.Multer.File[],
   ) {
-    console.log(createPostDto);
     return this.postService.createPost(user.id, createPostDto, images);
   }
 
   @Get()
   @ApiOperation({ summary: '게시글 목록 조회' })
   findPosts(@Query() query: FindPostsQuery) {
-    return this.postService.findPosts(query.page, query.type, query.q);
+    console.log('find posts controller', query);
+    return this.postService.findPosts(query);
   }
 
   @Get('region/:regionSlug')
@@ -80,11 +81,14 @@ export class PostController {
   }
 
   @Get(':postId')
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtOptionalGuard)
   @ApiOperation({ summary: '게시글 상세 조회' })
   @ApiBearerAuth('access-token')
-  getPostDetail(@Param('postId') postId: number, @CurrentUser() user: JwtUser) {
-    return this.postService.findPostById(postId, user.id);
+  getPostDetail(
+    @Param('postId') postId: number,
+    @CurrentUser() user?: JwtUser,
+  ) {
+    return this.postService.findPostById(postId, user?.id);
   }
 
   @Delete(':postId')
@@ -93,6 +97,15 @@ export class PostController {
   @ApiBearerAuth('access-token')
   deletePost(@CurrentUser() user: JwtUser, @Param('postId') postId: number) {
     return this.postService.deletePost(user.id, postId);
+  }
+
+  @Post(':postId/view')
+  @UseGuards(JwtOptionalGuard)
+  @ApiOperation({ summary: '게시글 조회수 증가' })
+  @ApiBearerAuth('access-token')
+  @Throttle({ post: { ttl: 10, limit: 10 } })
+  incrementViewCount(@Param('postId') postId: number) {
+    return this.postService.incrementViewCount(postId);
   }
 
   @UseGuards(JwtAccessGuard)

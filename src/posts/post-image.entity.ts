@@ -4,18 +4,23 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { Post } from './post.entity';
 
-@Index(['post'])
-@Entity('post_image')
+@Index(['postId'])
+@Entity('post_images')
 export class PostImage {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  url: string;
+  imageUrl: string;
+
+  @Column()
+  postId: number;
 
   @ManyToOne(() => Post, (post) => post.images, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'postId' })
   post: Post;
 }

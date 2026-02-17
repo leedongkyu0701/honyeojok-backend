@@ -22,14 +22,15 @@ export class TripRoutesController {
     return this.tripRoutesService.findHotRoutes();
   }
 
-  // 지역별 전체 루트
+  // 지역별 루트
   @Get('region/:region')
+  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
   @ApiOperation({ summary: '지역별 여행 루트 목록 조회' })
   getRoutesByRegion(@Param('region') region: string) {
     return this.tripRoutesService.findByRegion(region);
   }
 
-  // 지역 + 루트 상세
+  // 루트 상세
   @UseGuards(JwtOptionalGuard)
   @Get(':region/:slug')
   @ApiOperation({ summary: '여행 루트 상세 조회' })
@@ -70,8 +71,8 @@ export class TripRoutesController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('access-token')
   @Post()
-  @ApiOperation({ summary: '여행 루트 일괄 생성' })
-  createMany(@Body() body: CreateTripRouteDto[]) {
-    return this.tripRoutesService.createMany(body);
+  @ApiOperation({ summary: '여행 루트 생성' })
+  create(@Body() body: CreateTripRouteDto) {
+    return this.tripRoutesService.createOne(body);
   }
 }

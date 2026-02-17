@@ -43,7 +43,7 @@ export class AuthService {
 
       // 여기서 DB 유니크 충돌이 나면 전역필터가 409(DUPLICATE_RESOURCE)로 처리
       user = await this.userService.createUser({
-        email: dto.email ?? null,
+        email: dto.email ?? undefined,
         nickName,
         provider: dto.provider,
         providerId: dto.providerId,

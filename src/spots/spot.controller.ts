@@ -37,6 +37,7 @@ export class SpotController {
 
   @Get(':id')
   @ApiOperation({ summary: '관광지 상세 조회' })
+  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
   async findById(@Param('id') id: string) {
     return this.spotService.findById(Number(id));
   }
@@ -46,7 +47,7 @@ export class SpotController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '관광지 데이터 일괄 생성' })
-  createMany(@Body() createSpotDtos: CreateSpotDto[]) {
-    return this.spotService.createMany(createSpotDtos);
+  create(@Body() createSpotDto: CreateSpotDto) {
+    return this.spotService.createOne(createSpotDto);
   }
 }

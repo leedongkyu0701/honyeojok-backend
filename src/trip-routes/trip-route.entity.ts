@@ -1,4 +1,3 @@
-// src/trip-routes/trip-route.entity.ts
 import {
   Entity,
   Column,
@@ -17,7 +16,7 @@ import { Tag } from '../tags/tag.entity';
 import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Index(['destinationId', 'bookmarkCount'])
-@Entity()
+@Entity('trip_routes')
 export class TripRoute {
   @PrimaryGeneratedColumn()
   id: number;
@@ -25,10 +24,6 @@ export class TripRoute {
   @Index({ unique: true })
   @Column()
   slug: string;
-
-  @Index()
-  @Column()
-  region: string;
 
   @Column()
   title: string;
@@ -38,6 +33,9 @@ export class TripRoute {
 
   @Column('int')
   days: number;
+
+  @Column('int', { nullable: true })
+  honyeoCost?: number;
 
   @Column('int', { default: 0 })
   bookmarkCount: number;
@@ -54,7 +52,7 @@ export class TripRoute {
   @OneToMany(() => Bookmark, (bookmark) => bookmark.tripRoute)
   bookmarks: Bookmark[];
 
-  @OneToMany(() => TripRouteDay, (day) => day.tripRoute, { cascade: true })
+  @OneToMany(() => TripRouteDay, (day) => day.tripRoute)
   daysPlan: TripRouteDay[];
 
   @JoinTable({ name: 'trip_route_tags' })
