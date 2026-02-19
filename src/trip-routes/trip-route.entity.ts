@@ -31,6 +31,9 @@ export class TripRoute {
   @Column({ length: 300 })
   summary: string;
 
+  @Column({ type: 'text', nullable: true })
+  honyeoTip?: string;
+
   @Column('int')
   days: number;
 

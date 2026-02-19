@@ -68,6 +68,9 @@ export async function seedSpots(m: EntityManager) {
 
     entity.category = s.category ?? entity.category ?? SpotCategory.ETC;
 
+    entity.lat = s.lat;
+    entity.lng = s.lng;
+
     entity.honyeoTip = s.honyeoTip;
     entity.imageUrl = s.imageUrl;
     entity.imageSource = s.imageSource;

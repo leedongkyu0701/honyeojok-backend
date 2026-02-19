@@ -67,10 +67,20 @@ export async function seedTripRoutes(m: EntityManager) {
       ? []
       : await spotRepo.find({
           where: { slug: In(allSpotSlugs) },
-          select: ['id', 'slug'],
+          select: [
+            'id',
+            'slug',
+            'summary',
+            'address',
+            'imageUrl',
+            'imageCredit',
+            'lat',
+            'lng',
+            'externalUrl',
+          ],
         });
-  const spotIdBySlug = new Map(spots.map((s) => [s.slug, s.id]));
-  const missingSpots = allSpotSlugs.filter((s) => !spotIdBySlug.has(s));
+  const spotBySlug = new Map(spots.map((s) => [s.slug, s]));
+  const missingSpots = allSpotSlugs.filter((s) => !spotBySlug.has(s));
   if (missingSpots.length) {
     throw new Error(
       `seedTripRoutes: Spot not found (did you run seedSpots first?): ${missingSpots.join(', ')}`,
@@ -93,7 +103,8 @@ export async function seedTripRoutes(m: EntityManager) {
     route.summary = r.summary;
     route.days = r.days;
     route.honyeoCost = r.honyeoCost;
-    route.bookmarkCount = r.bookmarkCount ?? 0;
+    route.honyeoTip = r.honyeoTip;
+    route.bookmarkCount = route.bookmarkCount ?? r.bookmarkCount ?? 0; // 기존 bookmarkCount 유지 (seed에 없는 경우 0으로 초기화)
     route.destinationId = destinationId;
     route.tags = routeTags;
 
@@ -131,29 +142,41 @@ export async function seedTripRoutes(m: EntityManager) {
       });
       const savedDay = await dayRepo.save(day);
 
-      const items = d.items.map((i) =>
-        itemRepo.create({
+      const items = d.items.map((i) => {
+        const spot = i.spotSlug ? spotBySlug.get(i.spotSlug) : undefined;
+
+        // ✅ spotSlug가 있으면 spot에서 필드를 가져오고,
+        //    seed에 직접 description이 있는 경우(예: 혼밥/혼술 커스텀)는 seed 값을 우선 사용
+        const description = i.description ?? spot?.summary ?? '';
+        const address = i.address ?? spot?.address;
+        const imageUrl = i.imageUrl ?? spot?.imageUrl;
+        const imageCredit = i.imageCredit ?? spot?.imageCredit;
+        const lat = i.lat ?? spot?.lat;
+        const lng = i.lng ?? spot?.lng;
+        const externalUrl = i.externalUrl ?? spot?.externalUrl;
+
+        return itemRepo.create({
           day: savedDay,
 
           order: i.order,
           recommendedLevel: i.recommendedLevel ?? 3,
           title: i.title,
 
-          description: i.description,
-          address: i.address,
+          description,
+          address,
 
-          imageUrl: i.imageUrl,
-          imageCredit: i.imageCredit,
-          lat: i.lat,
-          lng: i.lng,
+          imageUrl,
+          imageCredit,
+          lat,
+          lng,
           startTime: i.startTime,
           endTime: i.endTime,
-          externalUrl: i.externalUrl,
+          externalUrl,
 
-          // spot 연결
-          spotId: i.spotSlug ? spotIdBySlug.get(i.spotSlug)! : undefined,
-        }),
-      );
+          // ✅ spot 연결
+          spotId: spot ? spot.id : undefined,
+        });
+      });
 
       await itemRepo.save(items);
     }

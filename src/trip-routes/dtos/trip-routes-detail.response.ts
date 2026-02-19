@@ -15,7 +15,7 @@ export class TripRouteItemResponse {
   lat: number | null;
   lng: number | null;
 
-  address: string;
+  address: string | null;
 
   startTime: string | null;
   endTime: string | null;
@@ -45,6 +45,7 @@ export class TripRouteDetailResponse {
   title: string;
   summary: string;
   days: number;
+  honyeoTip: string | null;
   honyeoCost: number | null;
 
   bookmarkCount: number;

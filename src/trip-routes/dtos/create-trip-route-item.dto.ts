@@ -62,9 +62,10 @@ export class CreateTripRouteItemDto {
   @IsNumber()
   lng?: number;
 
-  @ApiProperty({ description: '주소(필수)' })
+  @ApiPropertyOptional({ description: '주소(선택)' })
+  @IsOptional()
   @IsString()
-  address: string;
+  address?: string;
 
   @ApiPropertyOptional({ example: '10:30' })
   @IsOptional()

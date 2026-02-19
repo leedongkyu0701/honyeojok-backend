@@ -10,7 +10,6 @@ export interface SpotSeedData {
 
   isRecommended: boolean;
 
-  // 엔티티 nullable/optional
   category?: SpotCategory;
   honyeoTip?: string;
 
@@ -26,13 +25,18 @@ export interface SpotSeedData {
   tagSlugs?: string[];
 }
 
-import { seoulSpots } from './seoul';
-import { busanSpots } from './busan';
-import { mookhoSpots } from './mookho';
+import { busanSpots } from './busan/busan';
+import { seoulSpots } from './seoul/seoul';
+import { mookhoSpots } from './mookho/mookho';
+import { jejuSpots } from './jeju/jeju';
+import { jeonjuSpots } from './jeonju/jeonju';
+import { gangneungSpots } from './gangneung/gangneung';
 
 export const spots: SpotSeedData[] = [
   ...seoulSpots,
   ...busanSpots,
   ...mookhoSpots,
-  // ...jejuSpots,
+  ...jejuSpots,
+  ...jeonjuSpots,
+  ...gangneungSpots,
 ];

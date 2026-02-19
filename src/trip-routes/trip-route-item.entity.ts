@@ -40,8 +40,8 @@ export class TripRouteItem {
   @Column('double precision', { nullable: true })
   lng?: number;
 
-  @Column()
-  address: string;
+  @Column({ nullable: true })
+  address?: string;
 
   @Column({ nullable: true })
   startTime?: string;

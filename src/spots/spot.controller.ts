@@ -46,7 +46,7 @@ export class SpotController {
   @UseGuards(JwtAccessGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: '관광지 데이터 일괄 생성' })
+  @ApiOperation({ summary: '관광지 데이터 생성' })
   create(@Body() createSpotDto: CreateSpotDto) {
     return this.spotService.createOne(createSpotDto);
   }

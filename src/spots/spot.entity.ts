@@ -37,7 +37,7 @@ export class Spot {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   honyeoTip?: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

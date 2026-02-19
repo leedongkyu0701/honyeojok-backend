@@ -6,17 +6,17 @@ export interface TripRouteItemSeedData {
 
   title: string;
 
-  description: string;
-  address: string;
+  description?: string; // spot에서 가져오기
+  address?: string; // spot에서 가져오기
 
-  imageUrl?: string;
-  imageCredit?: string;
-  lat?: number;
-  lng?: number;
+  imageUrl?: string; // spot에서 가져오기
+  imageCredit?: string; // spot에서 가져오기
+  lat?: number; // spot에서 가져오기
+  lng?: number; // spot에서 가져오기
 
   startTime?: string;
   endTime?: string;
-  externalUrl?: string;
+  externalUrl?: string; // spot에서 가져오기
 }
 
 export interface TripRouteDaySeedData {
@@ -34,6 +34,7 @@ export interface TripRouteSeedData {
 
   title: string;
   summary: string;
+  honyeoTip?: string;
   days: number;
   honyeoCost?: number;
 
@@ -45,8 +46,16 @@ export interface TripRouteSeedData {
 
 import { seoulTripRoutes } from './seoul';
 import { busanTripRoutes } from './busan';
+import { mookhoTripRoutes } from './mookho';
+import { jejuTripRoutes } from './jeju';
+import { jeonjuTripRoutes } from './jeonju';
+import { gangneungTripRoutes } from './gangneung';
 
 export const tripRoutes: TripRouteSeedData[] = [
   ...seoulTripRoutes,
   ...busanTripRoutes,
+  ...mookhoTripRoutes,
+  ...jejuTripRoutes,
+  ...jeonjuTripRoutes,
+  ...gangneungTripRoutes,
 ];
