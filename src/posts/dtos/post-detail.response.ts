@@ -16,7 +16,7 @@ export class PostDetailResponse {
 
   rating?: number;
 
-  imageUrls: string[];
+  images: { url: string; caption: string | null }[];
 
   likeCount: number;
   viewCount: number;

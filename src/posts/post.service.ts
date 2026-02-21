@@ -100,8 +100,17 @@ export class PostService {
           }
 
           let thumbnailUrl: string | null = null;
+          const captions = createPostDto.captions || [];
 
-          for (const image of images) {
+          if (captions.length > images.length) {
+            throw BaseException.badRequest(
+              'Captions count cannot exceed images count',
+              ErrorCode.VALIDATION_FAILED,
+            );
+          }
+
+          for (let i = 0; i < images.length; i++) {
+            const image = images[i];
             const uniqueKey = `posts/${post.id}/${randomUUID()}.webp`;
             const buffer = await processImageBuffer(image.buffer, 'REVIEW');
             const imageUrl = await this.r2Service.uploadImage(
@@ -111,13 +120,15 @@ export class PostService {
 
             uploadedKeys.push(uniqueKey); // 업로드된 이미지 키 저장
 
-            if (!thumbnailUrl) {
+            if (i === 0) {
               thumbnailUrl = imageUrl; // 첫 번째 이미지를 썸네일로 설정
             }
 
             const postImage = manager.create(PostImage, {
               imageUrl: imageUrl,
               post,
+              caption: captions[i]?.trim(),
+              imgOrder: i,
             });
             postImages.push(postImage);
           }
@@ -194,12 +205,12 @@ export class PostService {
     const page = Math.max(1, query.page ?? 1);
     const take = Math.min(10, Math.max(1, query.take ?? 10));
     const skip = (page - 1) * take;
-    const { type, q: searchTerm } = query;
+    const { type, q: searchTerm, province } = query;
 
     const queryBuilder = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
-      .leftJoinAndSelect('post.images', 'images')
+      .leftJoinAndSelect('post.destination', 'destination')
       .where('post.isDeleted = :isDeleted', { isDeleted: false })
       .orderBy('post.createdAt', 'DESC')
       .take(take)
@@ -213,6 +224,10 @@ export class PostService {
       queryBuilder.andWhere('post.title ILIKE :searchTerm', {
         searchTerm: `%${searchTerm}%`,
       });
+    }
+
+    if (province && type === PostType.REVIEW) {
+      queryBuilder.andWhere('destination.province = :province', { province });
     }
 
     const [posts, total] = await queryBuilder.getManyAndCount();
@@ -286,7 +301,13 @@ export class PostService {
       rating: post.rating,
       likeCount: post.likeCount,
       likedByMe,
-      imageUrls: post.images?.map((image) => image.imageUrl) ?? [],
+      images:
+        post.images
+          ?.sort((a, b) => a.imgOrder - b.imgOrder)
+          .map((img) => ({
+            url: img.imageUrl,
+            caption: img.caption ?? null,
+          })) ?? [],
       viewCount: post.viewCount,
     };
   }

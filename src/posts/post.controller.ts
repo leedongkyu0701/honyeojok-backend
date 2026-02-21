@@ -23,6 +23,7 @@ import { Throttle } from '@nestjs/throttler';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { JwtOptionalGuard } from 'src/auth/guards/jwt-optional.guard';
+import { ValidationPipe } from '@nestjs/common';
 
 @ApiTags('Community')
 @Controller('posts')
@@ -54,7 +55,14 @@ export class PostController {
   )
   createPost(
     @CurrentUser() user: JwtUser,
-    @Body() createPostDto: CreatePostDto,
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: false,
+      }),
+    )
+    createPostDto: CreatePostDto,
     @UploadedFiles() images?: Express.Multer.File[],
   ) {
     return this.postService.createPost(user.id, createPostDto, images);
@@ -63,7 +71,6 @@ export class PostController {
   @Get()
   @ApiOperation({ summary: '게시글 목록 조회' })
   findPosts(@Query() query: FindPostsQuery) {
-    console.log('find posts controller', query);
     return this.postService.findPosts(query);
   }
 
@@ -149,7 +156,6 @@ export class PostController {
     @CurrentUser() user: JwtUser,
     @Param('commentId') commentId: number,
   ) {
-    console.log('delete comment controller', user.id, commentId);
     return this.postService.deleteComment(user.id, commentId);
   }
 }

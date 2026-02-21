@@ -9,7 +9,7 @@ import { User } from '../user/user.entity';
 import { Tag } from '../tags/tag.entity';
 import { TripRouteDay } from './trip-routes-day.entity';
 import { TripRouteItem } from './trip-route-item.entity';
-import { Spot } from 'src/spots/spot.entity';
+import { SpotModule } from 'src/spots/spot.module';
 
 @Module({
   imports: [
@@ -21,9 +21,10 @@ import { Spot } from 'src/spots/spot.entity';
       Tag,
       TripRouteDay,
       TripRouteItem,
-      Spot,
     ]),
+    SpotModule,
   ],
+
   providers: [TripRoutesService],
   controllers: [TripRoutesController],
 })

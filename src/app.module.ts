@@ -39,8 +39,8 @@ import { HealthModule } from './health/health.module';
           idleTimeoutMillis: 30000,
           connectionTimeoutMillis: 10000,
         },
-        synchronize: true,
-        dropSchema: true,
+        // synchronize: true,
+        // dropSchema: true,
       }),
     }),
     ThrottlerModule.forRoot([

@@ -15,7 +15,9 @@ import { TripRouteDay } from './trip-routes-day.entity';
 import { TripRouteItem } from './trip-route-item.entity';
 import { DataSource } from 'typeorm';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
-
+import { SpotCategory } from 'src/types/spot';
+import { GeoPoint } from 'src/types/util';
+import { SpotService } from 'src/spots/spot.service';
 @Injectable()
 export class TripRoutesService {
   constructor(
@@ -31,6 +33,8 @@ export class TripRoutesService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
+    private readonly spotService: SpotService,
   ) {}
 
   async findHotRoutes(): Promise<TripRoutesCardResponse[]> {
@@ -181,6 +185,72 @@ export class TripRoutesService {
         })),
       })),
     };
+  }
+
+  async getNearbySpots(
+    routeSlug: string,
+    radiusKm: number,
+    categories?: SpotCategory[],
+    limit?: number,
+  ) {
+    const route = await this.tripRouteRepo.findOne({
+      where: { slug: routeSlug },
+      relations: { daysPlan: { items: { spot: true } } },
+    });
+    if (!route) {
+      throw BaseException.notFound(
+        'TripRoute not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+      );
+    }
+
+    const points = this.collectRoutePoints(route);
+
+    if (points.length === 0) {
+      return [];
+    }
+
+    // ✅ 루트에 이미 포함된 spotId 제외 목록
+    const excludeSpotIds = new Set<number>();
+    for (const day of route.daysPlan ?? []) {
+      for (const item of day.items ?? []) {
+        if (typeof item.spotId === 'number') excludeSpotIds.add(item.spotId);
+      }
+    }
+
+    return this.spotService.findNearbyByPoints({
+      destinationId: route.destinationId,
+      points,
+      radiusKm,
+      categories,
+      limit: limit ?? 10,
+      excludeSpotIds: [...excludeSpotIds], // ✅ 추가
+    });
+  }
+
+  private collectRoutePoints(route: TripRoute): GeoPoint[] {
+    const raw: GeoPoint[] = [];
+
+    for (const day of route.daysPlan ?? []) {
+      for (const item of day.items ?? []) {
+        const lat = item.lat ?? item.spot?.lat ?? null;
+        const lng = item.lng ?? item.spot?.lng ?? null;
+        if (typeof lat === 'number' && typeof lng === 'number') {
+          raw.push({ lat, lng });
+        }
+      }
+    }
+
+    // 중복 제거(너무 많은 points 방지)
+    const uniq = new Map<string, GeoPoint>();
+    for (const p of raw) {
+      const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
+      if (!uniq.has(key)) uniq.set(key, p);
+    }
+
+    // 혹시 points가 너무 많아지면 제한
+    const pts = Array.from(uniq.values());
+    return pts.length > 30 ? pts.slice(0, 30) : pts;
   }
 
   async createOne(dto: CreateTripRouteDto) {

@@ -10,5 +10,6 @@ import { Tag } from '../tags/tag.entity';
   imports: [TypeOrmModule.forFeature([Spot, Destination, Tag])],
   providers: [SpotService],
   controllers: [SpotController],
+  exports: [SpotService],
 })
 export class SpotModule {}

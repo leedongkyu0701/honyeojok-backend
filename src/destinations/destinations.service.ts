@@ -124,6 +124,7 @@ export class DestinationsService {
         'score',
         'summary',
       ],
+      relations: ['tags'], // 태그 정보도 함께 로드
       // 필요한 필드만 선택
     });
 
@@ -136,6 +137,7 @@ export class DestinationsService {
       // TypeORM/Postgres decimal은 string으로 올 수 있어서 안전 변환
       latitude: Number(d.latitude),
       longitude: Number(d.longitude),
+      tagSlugs: d.tags?.map((t) => t.slug) ?? [],
     }));
   }
 

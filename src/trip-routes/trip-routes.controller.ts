@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { TripRoutesService } from './trip-routes.service';
 import { CreateTripRouteDto } from './dtos/create-trip-route.dto';
 import { CurrentUser } from 'src/auth/decorator/current-user.decorator';
@@ -9,6 +17,7 @@ import { JwtOptionalGuard } from 'src/auth/guards/jwt-optional.guard';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { RoleGuard } from 'src/auth/guards/role.guard';
 import { Roles } from 'src/auth/decorator/roles.decorator';
+import { GetNearbySpotsQueryDto } from './dtos/get-nearby-spots.query.dto';
 
 @ApiTags('TripRoutes')
 @Controller('trip-routes')
@@ -28,6 +37,20 @@ export class TripRoutesController {
   @ApiOperation({ summary: '지역별 여행 루트 목록 조회' })
   getRoutesByRegion(@Param('region') region: string) {
     return this.tripRoutesService.findByRegion(region);
+  }
+
+  @Get('nearby-spots/:routeSlug')
+  @ApiOperation({ summary: '여행 루트 주변 스팟 조회' })
+  getNearbySpots(
+    @Param('routeSlug') routeSlug: string,
+    @Query() query: GetNearbySpotsQueryDto,
+  ) {
+    return this.tripRoutesService.getNearbySpots(
+      routeSlug,
+      query.radiusKm ?? 3,
+      query.categories,
+      query.limit,
+    );
   }
 
   // 루트 상세

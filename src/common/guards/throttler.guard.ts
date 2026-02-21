@@ -11,16 +11,10 @@ export class ThrottlerCustomGuard extends ThrottlerGuard {
       return Promise.resolve(`user-${user.id}`);
     }
 
-    const cf = req.headers['cf-connecting-ip'];
-    if (typeof cf === 'string' && cf.length > 0) {
-      return Promise.resolve(`ip-${cf.trim()}`);
-    }
-
-    const xff = req.headers['x-forwarded-for'];
-    if (xff && typeof xff === 'string') {
-      return Promise.resolve(`ip-${xff.split(',')[0].trim()}`);
-    }
-
+    // const cf = req.headers['cf-connecting-ip'];
+    // if (typeof cf === 'string' && cf.length > 0) {
+    //   return Promise.resolve(`ip-${cf.trim()}`);
+    // }
     return Promise.resolve(`ip-${req.ip}`);
   }
 }

@@ -14,6 +14,17 @@ import { FindHotSpotsResponse } from './dtos/find-hot.response';
 
 import { SpotCategory } from 'src/types/spot';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import type { GeoPoint } from 'src/types/util';
+import { SpotMapResponse } from './dtos/spot-map.response';
+
+type FindNearbyByPointsArgs = {
+  destinationId: number;
+  points: GeoPoint[];
+  radiusKm: number;
+  categories?: SpotCategory[];
+  limit: number;
+  excludeSpotIds?: number[];
+};
 
 @Injectable()
 export class SpotService {
@@ -195,6 +206,106 @@ export class SpotService {
     }
 
     return this.toDetail(spot);
+  }
+
+  async findNearbyByPoints(args: FindNearbyByPointsArgs) {
+    const {
+      destinationId,
+      points,
+      radiusKm,
+      categories,
+      limit,
+      excludeSpotIds,
+    } = args;
+
+    const defaultCats: SpotCategory[] = [
+      SpotCategory.FOOD,
+      SpotCategory.CAFE,
+      SpotCategory.DRINK,
+    ];
+    const cats = categories?.length ? categories : defaultCats;
+
+    const bbox = this.makeBoundingBox(points, radiusKm);
+
+    const qb = this.spotRepository
+      .createQueryBuilder('s')
+      .select([
+        's.id',
+        's.slug',
+        's.name',
+        's.summary',
+        's.category',
+        's.lat',
+        's.lng',
+        's.imageUrl',
+      ])
+      .where('s.destinationId = :destinationId', { destinationId })
+      .andWhere('s.category IN (:...cats)', { cats })
+      .andWhere('s.lat BETWEEN :minLat AND :maxLat', {
+        minLat: bbox.minLat,
+        maxLat: bbox.maxLat,
+      })
+      .andWhere('s.lng BETWEEN :minLng AND :maxLng', {
+        minLng: bbox.minLng,
+        maxLng: bbox.maxLng,
+      });
+
+    // ✅ 루트에 포함된 spot 제외
+    if (excludeSpotIds?.length) {
+      qb.andWhere('s.id NOT IN (:...excludeSpotIds)', { excludeSpotIds });
+    }
+
+    const candidates = await qb.getMany();
+
+    // 후보 스팟들 중에서 실제 거리 계산하여 radiusKm 이내인 것만 필터링 (대략적인 bbox로 1차 필터링 했지만, 실제로는 더 멀리 있을 수 있기 때문 (원 형태 기준))
+    // 일단 Haversine 공식을 이용해서 계산해야 되지만 MVP애서는 그냥 bbox 필터링만으로 리턴해도 될 것 같음
+
+    const mapped = candidates
+      .filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number')
+      .map((s) => ({
+        id: s.id,
+        slug: s.slug,
+        name: s.name,
+        summary: s.summary,
+        category: s.category!,
+        lat: s.lat!,
+        lng: s.lng!,
+        imageUrl: s.imageUrl ?? null,
+      }));
+
+    const results: Partial<Record<SpotCategory, SpotMapResponse[]>> = {};
+    for (const c of cats) {
+      results[c] = mapped.filter((s) => s.category === c).slice(0, limit);
+    }
+    return results;
+  }
+
+  private makeBoundingBox(points: GeoPoint[], radiusKm: number) {
+    const lats = points.map((p) => p.lat);
+    const lngs = points.map((p) => p.lng);
+
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+
+    // 위도 1도 ≈ 111km
+    const latPad = radiusKm / 111;
+
+    // 경도 1도는 위도에 따라 줄어듦
+    const midLat = (minLat + maxLat) / 2;
+    const lngPad = radiusKm / (111 * Math.cos(this.toRad(midLat)));
+
+    return {
+      minLat: minLat - latPad,
+      maxLat: maxLat + latPad,
+      minLng: minLng - lngPad,
+      maxLng: maxLng + lngPad,
+    };
+  }
+
+  private toRad(deg: number) {
+    return (deg * Math.PI) / 180;
   }
 
   async createOne(dto: CreateSpotDto): Promise<Spot> {

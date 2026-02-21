@@ -8,4 +8,6 @@ export class DestinationMapResponse {
   longitude: number;
 
   score: number;
+
+  tagSlugs: string[];
 }

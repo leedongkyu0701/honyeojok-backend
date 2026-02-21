@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Post } from './post.entity';
 
-@Index(['postId'])
+@Index(['postId', 'imgOrder'])
 @Entity('post_images')
 export class PostImage {
   @PrimaryGeneratedColumn()
@@ -16,6 +16,12 @@ export class PostImage {
 
   @Column()
   imageUrl: string;
+
+  @Column({ type: 'text', nullable: true })
+  caption?: string;
+
+  @Column({ type: 'int', default: 0 })
+  imgOrder: number;
 
   @Column()
   postId: number;

@@ -2,6 +2,7 @@ import { IsEnum, IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { PostType } from 'src/types/post';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ProvinceGroup } from 'src/types/destination';
 
 export class FindPostsQuery {
   @ApiPropertyOptional({ example: 1 })
@@ -27,4 +28,9 @@ export class FindPostsQuery {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({ enum: ProvinceGroup })
+  @IsOptional()
+  @IsEnum(ProvinceGroup)
+  province?: ProvinceGroup;
 }

@@ -12,7 +12,7 @@ export const jejuAddresses: AddressSeedData[] = [
   },
   {
     slug: 'hamdeok-beach',
-    address: '제주특별자치도 제주시 조천읍 조함해안로 519-10',
+    address: '제주특별자치도 제주시 조천읍 조함해안로 525',
   },
   {
     slug: 'hyeopjae-beach',
@@ -86,7 +86,7 @@ export const jejuAddresses: AddressSeedData[] = [
   // 3) CAFE
   {
     slug: 'jeju-glass-house',
-    address: '제주특별자치도 서귀포시 성산읍 섭지코지로 107',
+    address: '제주특별자치도 서귀포시 성산읍 동류암로36번길 2',
   },
   {
     slug: 'cafe-delmoondo',
