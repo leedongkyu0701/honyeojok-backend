@@ -11,16 +11,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
-  expressApp.set('trust proxy', 1); // trust first proxy
-  expressApp.disable('x-powered-by');
-  app.enableShutdownHooks();
+  expressApp.set('trust proxy', 1); // 클라우드 환경에서 프록시 서버 뒤에 있을 때 클라이언트의 IP 주소를 올바르게 인식하도록 설정
+  expressApp.disable('x-powered-by'); // 보안 강화: Express가 'X-Powered-By' 헤더를 보내지 않도록 설정
+  app.enableShutdownHooks(); // 애플리케이션이 종료될 때 graceful shutdown을 지원하도록 설정
 
   const isProd = process.env.NODE_ENV === 'production';
 
   if (!isProd) {
     const config = new DocumentBuilder()
-      .setTitle('Honyeo API')
-      .setDescription('Honyeo(NestJS) API 문서입니다.')
+      .setTitle('HonyeoJok API')
+      .setDescription('HonyeoJok`(NestJS) API 문서입니다.')
       .setVersion('1.0.0')
       .addBearerAuth(
         {
@@ -43,7 +43,7 @@ async function bootstrap() {
       swaggerOptions: {
         persistAuthorization: true,
       },
-      customSiteTitle: 'Honyeo API Docs',
+      customSiteTitle: 'HonyeoJok API Docs',
     });
   }
 
@@ -71,9 +71,9 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // only allow properties that are in the DTO
-      forbidNonWhitelisted: true, // throw an error if non-whitelisted properties are present
-      transform: true, // automatically transform payloads to be objects typed according to their DTO classes
+      whitelist: true, // dto에 정의된 속성만 허용하고, 그렇지 않은 속성은 자동으로 제거
+      forbidNonWhitelisted: true, // dto에 정의되지 않은 속성이 요청에 포함된 경우 예외를 발생시킴
+      transform: true, // 요청 데이터를 dto 클래스의 인스턴스로 자동 변환
     }),
   );
   await app.listen(process.env.PORT ?? 5001);

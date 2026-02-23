@@ -1,4 +1,3 @@
-// src/trip-routes/dtos/create-trip-route.dto.ts
 import { Type } from 'class-transformer';
 import {
   IsArray,

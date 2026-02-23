@@ -18,7 +18,7 @@ export const AppDataSource = new DataSource({
     process.env.NODE_ENV === 'production'
       ? { rejectUnauthorized: false }
       : false,
-  synchronize: false, // 마이그레이션을 사용할 것이기 때문에 false로 설정
+  synchronize: false,
   entities: ['src/**/*.entity.ts'],
   migrations: ['src/migrations/*.ts'],
 });

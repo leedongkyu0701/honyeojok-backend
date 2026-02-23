@@ -1,4 +1,3 @@
-// src/auth/cookies.ts
 import type { ConfigService } from '@nestjs/config';
 import type { CookieOptions } from 'express';
 
@@ -9,15 +8,11 @@ export function getRefreshCookieOptions(config: ConfigService): CookieOptions {
     'lax';
   const isProd = nodeEnv === 'production';
 
-  // 운영 도메인 있으면 여기서 세팅 가능
-  // const domain = config.get<string>("COOKIE_DOMAIN"); // 예: ".honyeo.com"
-
   return {
     httpOnly: true,
-    secure: isProd, // 운영 HTTPS에서만 true
+    secure: isProd,
     sameSite: cookieSameSite,
     path: '/auth',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 필요하면
-    // domain: isProd ? domain : undefined,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   };
 }

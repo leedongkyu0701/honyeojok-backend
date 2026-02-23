@@ -32,7 +32,7 @@ export class Spot {
   summary: string;
 
   @Column({ type: 'enum', enum: SpotCategory, default: SpotCategory.ETC })
-  category?: SpotCategory;
+  category: SpotCategory;
 
   @Column({ type: 'text' })
   description: string;

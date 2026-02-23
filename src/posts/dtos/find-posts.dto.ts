@@ -1,5 +1,5 @@
 import { IsEnum, IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { PostType } from 'src/types/post';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProvinceGroup } from 'src/types/destination';
@@ -12,8 +12,7 @@ export class FindPostsQuery {
   page: number = 1;
 
   @ApiPropertyOptional({ example: 10, default: 10, maximum: 10 })
-  @IsOptional()
-  @Transform(({ value }) => Number(value))
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10)

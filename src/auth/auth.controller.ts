@@ -55,7 +55,7 @@ export class AuthController {
     const CLIENT_ID = this.configService.getOrThrow<string>('KAKAO_CLIENT_ID');
     const REDIRECT_URI =
       this.configService.getOrThrow<string>('KAKAO_REDIRECT_URI');
-    const state = generateOAuthState();
+    const state = generateOAuthState(); // CSRF 방지 위한 랜덤 문자열 생성
     setOAuthStateCookie(res, AuthProvider.KAKAO, state);
     const kakaoAuthURL =
       `https://kauth.kakao.com/oauth/authorize?response_type=code` +
@@ -71,26 +71,42 @@ export class AuthController {
     @Res() res: Response,
     @Req() req: CookieRequest,
   ) {
-    verifyOAuthStateOrThrow(req, res, AuthProvider.KAKAO, _state);
-    const tokens = await this.authService.kakaoAccessToken(code);
-    const kakaoUser = await this.authService.kakaoUserInfo(tokens.access_token);
+    try {
+      verifyOAuthStateOrThrow(req, res, AuthProvider.KAKAO, _state);
+      const tokens = await this.authService.kakaoAccessToken(code);
+      const kakaoUser = await this.authService.kakaoUserInfo(
+        tokens.access_token,
+      );
 
-    const dto: SocialLoginDto = {
-      provider: AuthProvider.KAKAO,
-      providerId: kakaoUser.id.toString(),
-      email: kakaoUser.kakao_account?.email ?? null,
-    };
+      const dto: SocialLoginDto = {
+        provider: AuthProvider.KAKAO,
+        providerId: kakaoUser.id.toString(),
+        email: kakaoUser.kakao_account?.email ?? null,
+      };
 
-    const { refreshToken } = await this.authService.socialLogin(dto);
+      const { refreshToken } = await this.authService.socialLogin(dto);
 
-    res.cookie(
-      'refreshToken',
-      refreshToken,
-      getRefreshCookieOptions(this.configService),
-    );
+      res.cookie(
+        'refreshToken',
+        refreshToken,
+        getRefreshCookieOptions(this.configService),
+      );
 
-    // ✅ 토큰을 URL로 넘기지 말고, 프론트에서 refresh-token 호출로 accessToken 받게
-    return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
+      // 토큰을 URL로 넘기지 말고, 프론트 리다이렉트 페이지에서 바로 refresh 토큰 쿠키 읽어서 액세스 토큰 재발급 요청하도록 했음.
+      return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
+    } catch (error) {
+      if (
+        error instanceof BaseException &&
+        error.code === ErrorCode.AUTH_WITHDRAWN_USER
+      ) {
+        return res.redirect(
+          `${this.frontendOrigin}/auth/login?error=withdrawn_user`,
+        );
+      }
+      return res.redirect(
+        `${this.frontendOrigin}/auth/login?error=oauth_failed`,
+      );
+    }
   }
 
   @Get('google')
@@ -125,27 +141,41 @@ export class AuthController {
     @Res() res: Response,
     @Req() req: CookieRequest,
   ) {
-    verifyOAuthStateOrThrow(req, res, AuthProvider.GOOGLE, _state);
-    const tokens = await this.authService.googleAccessToken(code);
-    const googleUser = await this.authService.googleUserInfo(
-      tokens.access_token,
-    );
+    try {
+      verifyOAuthStateOrThrow(req, res, AuthProvider.GOOGLE, _state);
+      const tokens = await this.authService.googleAccessToken(code);
+      const googleUser = await this.authService.googleUserInfo(
+        tokens.access_token,
+      );
 
-    const dto: SocialLoginDto = {
-      provider: AuthProvider.GOOGLE,
-      providerId: googleUser.id,
-      email: googleUser.email ?? null,
-    };
+      const dto: SocialLoginDto = {
+        provider: AuthProvider.GOOGLE,
+        providerId: googleUser.id,
+        email: googleUser.email ?? null,
+      };
 
-    const { refreshToken } = await this.authService.socialLogin(dto);
+      const { refreshToken } = await this.authService.socialLogin(dto);
 
-    res.cookie(
-      'refreshToken',
-      refreshToken,
-      getRefreshCookieOptions(this.configService),
-    );
+      res.cookie(
+        'refreshToken',
+        refreshToken,
+        getRefreshCookieOptions(this.configService),
+      );
 
-    return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
+      return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
+    } catch (error) {
+      if (
+        error instanceof BaseException &&
+        error.code === ErrorCode.AUTH_WITHDRAWN_USER
+      ) {
+        return res.redirect(
+          `${this.frontendOrigin}/auth/login?error=withdrawn_user`,
+        );
+      }
+      return res.redirect(
+        `${this.frontendOrigin}/auth/login?error=oauth_failed`,
+      );
+    }
   }
 
   @Get('naver')
@@ -170,25 +200,41 @@ export class AuthController {
     @Res() res: Response,
     @Req() req: CookieRequest,
   ) {
-    verifyOAuthStateOrThrow(req, res, AuthProvider.NAVER, _state);
-    const tokens = await this.authService.naverAccessToken(code);
-    const naverUser = await this.authService.naverUserInfo(tokens.access_token);
+    try {
+      verifyOAuthStateOrThrow(req, res, AuthProvider.NAVER, _state);
+      const tokens = await this.authService.naverAccessToken(code);
+      const naverUser = await this.authService.naverUserInfo(
+        tokens.access_token,
+      );
 
-    const dto: SocialLoginDto = {
-      provider: AuthProvider.NAVER,
-      providerId: naverUser.response.id,
-      email: naverUser.response.email ?? null,
-    };
+      const dto: SocialLoginDto = {
+        provider: AuthProvider.NAVER,
+        providerId: naverUser.response.id,
+        email: naverUser.response.email ?? null,
+      };
 
-    const { refreshToken } = await this.authService.socialLogin(dto);
+      const { refreshToken } = await this.authService.socialLogin(dto);
 
-    res.cookie(
-      'refreshToken',
-      refreshToken,
-      getRefreshCookieOptions(this.configService),
-    );
+      res.cookie(
+        'refreshToken',
+        refreshToken,
+        getRefreshCookieOptions(this.configService),
+      );
 
-    return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
+      return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
+    } catch (error) {
+      if (
+        error instanceof BaseException &&
+        error.code === ErrorCode.AUTH_WITHDRAWN_USER
+      ) {
+        return res.redirect(
+          `${this.frontendOrigin}/auth/login?error=withdrawn_user`,
+        );
+      }
+      return res.redirect(
+        `${this.frontendOrigin}/auth/login?error=oauth_failed`,
+      );
+    }
   }
 
   @UseGuards(OriginGuard, JwtRefreshGuard)
@@ -218,7 +264,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(OriginGuard, JwtAccessGuard)
   @Post('logout')
   @ApiOperation({ summary: '로그아웃' })
   @ApiBearerAuth('access-token')
@@ -227,6 +273,19 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.logout(user.id);
+    res.clearCookie('refreshToken', { path: '/auth' });
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAccessGuard)
+  @Post('withdraw')
+  @ApiOperation({ summary: '회원 탈퇴' })
+  @ApiBearerAuth('access-token')
+  async withdraw(
+    @CurrentUser() user: JwtUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.withdraw(user.id);
     res.clearCookie('refreshToken', { path: '/auth' });
     return { ok: true };
   }

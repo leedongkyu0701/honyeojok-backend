@@ -28,7 +28,6 @@ export class R2Service {
       !bucketName ||
       !publicUrl
     ) {
-      // 설정 누락은 서버 설정 문제 -> 503
       throw BaseException.serviceUnavailable('R2 config missing', {
         provider: 'r2',
       });

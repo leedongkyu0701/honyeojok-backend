@@ -1,4 +1,3 @@
-// src/common/filters/global-exception.filter.ts
 import {
   ArgumentsHost,
   Catch,
@@ -111,7 +110,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // -----------------------
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
-      const response = exception.getResponse(); // string | object
+      const response = exception.getResponse();
       const fallbackCode = getFallbackCode(statusCode);
 
       // BaseException이 만든 형태면 code/details를 최대한 존중

@@ -21,16 +21,15 @@ export interface SpotSeedData {
   lat?: number;
   lng?: number;
   externalUrl?: string;
-
   tagSlugs?: string[];
 }
 
-import { busanSpots } from './busan/busan';
-import { seoulSpots } from './seoul/seoul';
-import { mookhoSpots } from './mookho/mookho';
-import { jejuSpots } from './jeju/jeju';
-import { jeonjuSpots } from './jeonju/jeonju';
-import { gangneungSpots } from './gangneung/gangneung';
+import { busanSpots } from './busan';
+import { seoulSpots } from './seoul';
+import { mookhoSpots } from './mookho';
+import { jejuSpots } from './jeju';
+import { jeonjuSpots } from './jeonju';
+import { gangneungSpots } from './gangneung';
 
 export const spots: SpotSeedData[] = [
   ...seoulSpots,

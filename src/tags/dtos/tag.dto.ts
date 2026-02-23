@@ -2,8 +2,7 @@ import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTagDto {
-  // slug: 영문/숫자/하이픈만 (프론트/URL/DB 안정)
-  @ApiProperty()
+  @ApiProperty({ example: 'sea', description: '태그 슬러그' })
   @IsString()
   @MinLength(2)
   @MaxLength(30)
@@ -13,7 +12,7 @@ export class CreateTagDto {
   })
   slug: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: '해변', description: '태그 라벨' })
   @IsString()
   @MinLength(1)
   @MaxLength(20)

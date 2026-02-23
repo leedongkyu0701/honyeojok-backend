@@ -20,7 +20,7 @@ export class User {
   id: number;
 
   @Column({ type: 'varchar', nullable: true })
-  email?: string;
+  email?: string | null;
 
   @Column({ type: 'enum', enum: AuthProvider })
   provider: AuthProvider;
@@ -31,13 +31,13 @@ export class User {
   @Column({ default: false })
   isDeleted: boolean;
 
-  @Column({ unique: true })
-  nickName: string;
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  nickName: string | null;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'text', nullable: true })
   refreshToken?: string | null;
 
   @OneToMany(() => Post, (post) => post.user)

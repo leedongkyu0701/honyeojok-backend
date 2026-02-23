@@ -1,4 +1,3 @@
-// src/seed/steps/04-trip-routes.step.ts
 import type { EntityManager } from 'typeorm';
 import { In } from 'typeorm';
 
@@ -91,7 +90,7 @@ export async function seedTripRoutes(m: EntityManager) {
     const destinationId = destIdBySlug.get(r.destinationSlug)!;
     const routeTags = (r.tagSlugs ?? []).map((slug) => tagBySlug.get(slug)!);
 
-    // A) Route: slug unique 기반 idempotent
+    // 1) Route: slug unique 기반 idempotent
     const existingRoute = await routeRepo.findOne({
       where: { slug: r.slug },
       relations: ['tags'],
@@ -110,7 +109,7 @@ export async function seedTripRoutes(m: EntityManager) {
 
     const savedRoute = await routeRepo.save(route);
 
-    // B) Day/Item: 삭제 후 재삽입(가장 예측 가능)
+    // 2) Day/Item: 삭제 후 재삽입(가장 예측 가능)
     //    - items -> days 순서로 삭제해야 FK 제약 안 걸림
     const existingDays = await dayRepo.find({
       where: { tripRouteId: savedRoute.id },
@@ -119,12 +118,12 @@ export async function seedTripRoutes(m: EntityManager) {
 
     if (existingDays.length > 0) {
       const dayIds = existingDays.map((d) => d.id);
-      // itemRepo.delete에서 relation 조건 대신 dayId로 삭제 (가장 확실)
+      // itemRepo.delete에서 relation 조건 대신 dayId로 삭제
       await itemRepo.delete({ dayId: In(dayIds) });
       await dayRepo.delete({ tripRouteId: savedRoute.id });
     }
 
-    // C) 새로 삽입
+    // 3) 새로 삽입
     for (const d of r.daysPlan) {
       // order 중복 방지 (dayId+order unique)
       const orders = d.items.map((i) => i.order);

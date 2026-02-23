@@ -8,7 +8,7 @@ export class PostDetailResponse {
 
   createdAt: Date;
 
-  nickName?: string;
+  nickName: string;
 
   content: string;
 

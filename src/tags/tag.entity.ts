@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToMany,
-  Index,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToMany } from 'typeorm';
 import { TripRoute } from '../trip-routes/trip-route.entity';
 import { Spot } from 'src/spots/spot.entity';
 import { Destination } from 'src/destinations/destination.entity';
@@ -14,8 +8,7 @@ export class Tag {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index({ unique: true })
-  @Column()
+  @Column({ unique: true, length: 100 })
   slug: string;
 
   @Column()

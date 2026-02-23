@@ -38,10 +38,10 @@ export class Destination {
   @Column('float')
   score: number;
 
-  @Column('decimal')
+  @Column('double precision')
   latitude: number;
 
-  @Column('decimal')
+  @Column('double precision')
   longitude: number;
 
   @Column()

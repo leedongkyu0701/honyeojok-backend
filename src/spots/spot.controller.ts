@@ -15,29 +15,29 @@ import { UserRole } from 'src/types/user';
 export class SpotController {
   constructor(private readonly spotService: SpotService) {}
 
-  @Get('recommended') // 메인 홈페이지에 쓰일 추천 관광지 목록
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @Get('recommended')
   @ApiOperation({ summary: '추천 관광지 목록 조회' })
   async findRecommended() {
     return this.spotService.findRecommended();
   }
 
-  @Get('hot') // /spots 페이지에 쓰일 핫한 관광지 목록
+  @Get('hot')
   @ApiOperation({ summary: '인기 관광지 목록 조회' })
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   async findHot() {
     return this.spotService.findHot();
   }
 
-  @Get('region/:region') // 지역별 관광지 목록
+  @Get('region/:region')
   @ApiOperation({ summary: '지역별 관광지 목록 조회' })
+  @HttpCache({ maxAge: 600, sMaxAge: 300, swr: 60 })
   async find(@Param('region') region: string, @Query() query: FindSpotsQuery) {
     return this.spotService.findByQuery(query, region);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '관광지 상세 조회' })
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   async findById(@Param('id') id: string) {
     return this.spotService.findById(Number(id));
   }

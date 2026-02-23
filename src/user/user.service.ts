@@ -9,7 +9,6 @@ import { UserProfileResponse } from './dtos/user-profile.response';
 import { PostCardResponse } from 'src/posts/dtos/post-card.response';
 import { Post } from 'src/posts/post.entity';
 import { TripRoutesCardResponse } from 'src/trip-routes/dtos/trip-routes-card.response';
-import { QueryFailedError } from 'typeorm';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 
 @Injectable()
@@ -23,15 +22,25 @@ export class UserService {
     private readonly postRepository: Repository<Post>,
   ) {}
   async findById(id: number): Promise<User | null> {
-    return this.userRepository.findOne({ where: { id } });
+    return this.userRepository.findOne({ where: { id, isDeleted: false } });
   }
 
   async findByProvider(
     provider: AuthProvider,
     providerId: string,
   ): Promise<User | null> {
-    return this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { provider, providerId, isDeleted: false },
+    });
+    return user;
+  }
+
+  async findDeletedByProvider(
+    provider: AuthProvider,
+    providerId: string,
+  ): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { provider, providerId, isDeleted: true },
     });
   }
 
@@ -40,6 +49,7 @@ export class UserService {
       where: { nickName, isDeleted: false },
     });
   }
+
   async createUser(data: Partial<User>): Promise<User> {
     const user = this.userRepository.create(data);
     return this.userRepository.save(user);
@@ -51,6 +61,7 @@ export class UserService {
   ): Promise<boolean> {
     return argon2.verify(hashedToken, plainToken);
   }
+
   async updateRefreshToken(
     userId: number,
     hashedRefreshToken: string,
@@ -59,6 +70,7 @@ export class UserService {
       refreshToken: hashedRefreshToken,
     });
   }
+
   async clearRefreshToken(userId: number): Promise<void> {
     await this.userRepository.update(userId, { refreshToken: null });
   }
@@ -78,7 +90,7 @@ export class UserService {
     return {
       id: user.id,
       email: user.email ?? null,
-      nickName: user.nickName,
+      nickName: user.nickName ?? '탈퇴한 혼여족',
       provider: user.provider,
       createdAt: user.createdAt,
     };
@@ -87,7 +99,6 @@ export class UserService {
   async updateNickName(userId: number, newNickName: string) {
     const nickName = newNickName.trim();
 
-    // 1. 기본 방어 (DTO 있어도 한 번 더)
     if (nickName.length < 2 || nickName.length > 12) {
       throw BaseException.badRequest(
         'NickName length must be 2~12',
@@ -95,7 +106,6 @@ export class UserService {
       );
     }
 
-    // 2. 현재 유저 조회
     const me = await this.userRepository.findOne({
       where: { id: userId, isDeleted: false },
     });
@@ -104,12 +114,10 @@ export class UserService {
       throw BaseException.badRequest('User not found', ErrorCode.BAD_REQUEST);
     }
 
-    // 3. 같은 닉네임이면 그냥 성공 처리 (UX)
     if (me.nickName === nickName) {
       return { ok: true };
     }
 
-    // 4. 다른 유저가 사용 중인지 체크 (삭제 유저 제외)
     const exists = await this.userRepository.findOne({
       where: { nickName, isDeleted: false },
     });
@@ -121,22 +129,7 @@ export class UserService {
       );
     }
 
-    // 5. 업데이트 + DB unique 에러 방어
-    try {
-      await this.userRepository.update(userId, { nickName });
-    } catch (e) {
-      // PostgreSQL unique_violation
-      if (e instanceof QueryFailedError) {
-        const driverErr = e.driverError as Record<string, unknown>;
-        if (driverErr.code === '23505') {
-          throw BaseException.conflict(
-            'NickName already exists',
-            ErrorCode.DUPLICATE_RESOURCE,
-          );
-        }
-      }
-      throw e;
-    }
+    await this.userRepository.update(userId, { nickName });
 
     return { ok: true };
   }
@@ -163,7 +156,7 @@ export class UserService {
       id: post.id,
       title: post.title,
       region: post.region,
-      nickName: user.nickName,
+      nickName: user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
       viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
@@ -223,5 +216,14 @@ export class UserService {
       tripRoutes: tripRoutesCards,
       totalPages,
     };
+  }
+
+  async withdraw(userId: number): Promise<void> {
+    await this.userRepository.update(userId, {
+      isDeleted: true,
+      refreshToken: null,
+      email: null,
+      nickName: null,
+    });
   }
 }

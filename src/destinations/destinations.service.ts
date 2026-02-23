@@ -1,4 +1,3 @@
-// src/destinations/destinations.service.ts
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, ILike } from 'typeorm';
@@ -23,8 +22,6 @@ export class DestinationsService {
   constructor(
     @InjectRepository(Destination)
     private readonly repo: Repository<Destination>,
-    @InjectRepository(Tag)
-    private readonly tagRepo: Repository<Tag>,
     @InjectRepository(TripRoute)
     private readonly tripRouteRepo: Repository<TripRoute>,
     @InjectRepository(Spot)
@@ -43,26 +40,21 @@ export class DestinationsService {
 
     if (query.province) {
       qb.andWhere('destination.province = :province', {
-        // 조건문
-        province: query.province, // 값 바인딩
+        province: query.province,
       });
     }
-
-    // 태그 필터링 (OR 조건)
-    // if (query.tags?.length) {
-    //   qb.innerJoin('destination.tags', 'tag') // row 만들기
-    //     .andWhere('tag.slug IN (:...tagSlugs)', { tagSlugs: query.tags })
-    //     .distinct(true); // 조인 중복 방지
-    // }
 
     // 정렬 규칙: rank는 ASC, score는 DESC
     if (sort === 'score') {
       qb.orderBy('destination.score', 'DESC').addOrderBy(
         'destination.id',
-        'ASC',
+        'DESC',
       );
     } else {
-      qb.orderBy('destination.rank', 'ASC').addOrderBy('destination.id', 'ASC');
+      qb.orderBy('destination.rank', 'ASC').addOrderBy(
+        'destination.id',
+        'DESC',
+      );
     }
 
     qb.skip(skip).take(take);
@@ -124,8 +116,7 @@ export class DestinationsService {
         'score',
         'summary',
       ],
-      relations: ['tags'], // 태그 정보도 함께 로드
-      // 필요한 필드만 선택
+      relations: ['tags'],
     });
 
     return rows.map((d) => ({
@@ -134,9 +125,8 @@ export class DestinationsService {
       name: d.name,
       score: d.score,
       summary: d.summary,
-      // TypeORM/Postgres decimal은 string으로 올 수 있어서 안전 변환
-      latitude: Number(d.latitude),
-      longitude: Number(d.longitude),
+      latitude: d.latitude,
+      longitude: d.longitude,
       tagSlugs: d.tags?.map((t) => t.slug) ?? [],
     }));
   }
@@ -155,13 +145,13 @@ export class DestinationsService {
     }
 
     const tripRoutes = await this.tripRouteRepo.find({
-      where: { destination: { id: destination.id } },
+      where: { destinationId: destination.id },
       order: { bookmarkCount: 'DESC', id: 'DESC' },
       take: 3,
     });
 
     const spots = await this.spotRepo.find({
-      where: { destination: { id: destination.id }, isRecommended: true },
+      where: { destinationId: destination.id, isRecommended: true },
       relations: ['tags'],
       order: { id: 'DESC' },
       take: 5,
@@ -273,7 +263,6 @@ export class DestinationsService {
       if (dto.tagSlugs?.length) {
         const tags = await tagRepo.find({ where: { slug: In(dto.tagSlugs) } });
 
-        // 없는 slug 섞이면 에러로 막는 게 운영에 안전
         if (tags.length !== dto.tagSlugs.length) {
           const found = new Set(tags.map((t) => t.slug));
           const missing = dto.tagSlugs.filter((s) => !found.has(s));

@@ -32,9 +32,7 @@ export class SpotService {
     @InjectRepository(Spot)
     private readonly spotRepository: Repository<Spot>,
     @InjectRepository(Destination)
-    private readonly destinationRepository: Repository<Destination>,
-    @InjectRepository(Tag)
-    private readonly tagRepository: Repository<Tag>,
+    private readonly destRepo: Repository<Destination>,
   ) {}
 
   private toCard(spot: Spot): SpotCardResponse {
@@ -97,11 +95,11 @@ export class SpotService {
     query: FindSpotsQuery,
     region: string,
   ): Promise<{ data: SpotCardResponse[]; totalPages: number }> {
-    if (!region?.trim()) {
-      throw BaseException.badRequest(
-        '지역이 누락되었습니다.',
-        ErrorCode.BAD_REQUEST,
-      );
+    const destination = await this.destRepo.findOne({
+      where: { slug: region },
+    });
+    if (!destination) {
+      throw BaseException.badRequest('Invalid region', ErrorCode.BAD_REQUEST);
     }
 
     const page = Math.max(1, query.page ?? 1);
@@ -250,7 +248,7 @@ export class SpotService {
         maxLng: bbox.maxLng,
       });
 
-    // ✅ 루트에 포함된 spot 제외
+    // 루트에 포함된 spot 제외
     if (excludeSpotIds?.length) {
       qb.andWhere('s.id NOT IN (:...excludeSpotIds)', { excludeSpotIds });
     }
@@ -258,7 +256,7 @@ export class SpotService {
     const candidates = await qb.getMany();
 
     // 후보 스팟들 중에서 실제 거리 계산하여 radiusKm 이내인 것만 필터링 (대략적인 bbox로 1차 필터링 했지만, 실제로는 더 멀리 있을 수 있기 때문 (원 형태 기준))
-    // 일단 Haversine 공식을 이용해서 계산해야 되지만 MVP애서는 그냥 bbox 필터링만으로 리턴해도 될 것 같음
+    // 일단 Haversine 공식을 이용해서 계산해야 되지만 MVP애서는 그냥 bbox 필터링만으로 리턴
 
     const mapped = candidates
       .filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number')
@@ -267,7 +265,7 @@ export class SpotService {
         slug: s.slug,
         name: s.name,
         summary: s.summary,
-        category: s.category!,
+        category: s.category,
         lat: s.lat!,
         lng: s.lng!,
         imageUrl: s.imageUrl ?? null,

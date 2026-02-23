@@ -1,29 +1,30 @@
-import { Controller, Post } from '@nestjs/common';
 import {
+  Controller,
+  Post,
+  UseGuards,
+  UseInterceptors,
+  ParseIntPipe,
   Body,
   Delete,
   Get,
   Param,
   Query,
   UploadedFiles,
-} from '@nestjs/common/decorators';
+} from '@nestjs/common';
+
 import { CreatePostDto } from './dtos/create-post.dto';
 import { PostService } from './post.service';
 import { CurrentUser } from 'src/auth/decorator/current-user.decorator';
 import type { JwtUser } from 'src/types/user';
 import { CreateCommentDto } from './dtos/create-comment.dto';
-import { UseGuards } from '@nestjs/common';
 import { JwtAccessGuard } from 'src/auth/guards/jwt-access.guard';
 import { FindPostsQuery } from './dtos/find-posts.dto';
-
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { JwtOptionalGuard } from 'src/auth/guards/jwt-optional.guard';
-import { ValidationPipe } from '@nestjs/common';
 
 @ApiTags('Community')
 @Controller('posts')
@@ -37,7 +38,7 @@ export class PostController {
   @Throttle({ post: { ttl: 10, limit: 10 } })
   @UseInterceptors(
     FilesInterceptor('image', 5, {
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      limits: { fileSize: 7 * 1024 * 1024 }, // 7MB
       fileFilter: (req, file, cb) => {
         const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowedMimeTypes.includes(file.mimetype)) {
@@ -55,13 +56,7 @@ export class PostController {
   )
   createPost(
     @CurrentUser() user: JwtUser,
-    @Body(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: false,
-      }),
-    )
+    @Body()
     createPostDto: CreatePostDto,
     @UploadedFiles() images?: Express.Multer.File[],
   ) {
@@ -81,7 +76,7 @@ export class PostController {
   }
 
   @Get('best')
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @HttpCache({ maxAge: 600, sMaxAge: 3600, swr: 300 })
   @ApiOperation({ summary: '베스트 게시글 조회' })
   findBestPosts() {
     return this.postService.findBestPosts();
@@ -92,7 +87,7 @@ export class PostController {
   @ApiOperation({ summary: '게시글 상세 조회' })
   @ApiBearerAuth('access-token')
   getPostDetail(
-    @Param('postId') postId: number,
+    @Param('postId', ParseIntPipe) postId: number,
     @CurrentUser() user?: JwtUser,
   ) {
     return this.postService.findPostById(postId, user?.id);
@@ -102,7 +97,10 @@ export class PostController {
   @UseGuards(JwtAccessGuard)
   @ApiOperation({ summary: '게시글 삭제' })
   @ApiBearerAuth('access-token')
-  deletePost(@CurrentUser() user: JwtUser, @Param('postId') postId: number) {
+  deletePost(
+    @CurrentUser() user: JwtUser,
+    @Param('postId', ParseIntPipe) postId: number,
+  ) {
     return this.postService.deletePost(user.id, postId);
   }
 
@@ -111,7 +109,7 @@ export class PostController {
   @ApiOperation({ summary: '게시글 조회수 증가' })
   @ApiBearerAuth('access-token')
   @Throttle({ post: { ttl: 10, limit: 10 } })
-  incrementViewCount(@Param('postId') postId: number) {
+  incrementViewCount(@Param('postId', ParseIntPipe) postId: number) {
     return this.postService.incrementViewCount(postId);
   }
 
@@ -122,7 +120,7 @@ export class PostController {
   @Throttle({ post: { ttl: 10, limit: 10 } })
   toggleLikePost(
     @CurrentUser() user: JwtUser,
-    @Param('postId') postId: number,
+    @Param('postId', ParseIntPipe) postId: number,
   ) {
     return this.postService.toggleLikePost(user.id, postId);
   }
@@ -136,7 +134,7 @@ export class PostController {
   @Throttle({ post: { ttl: 10, limit: 10 } })
   createComment(
     @CurrentUser() user: JwtUser,
-    @Param('postId') postId: number,
+    @Param('postId', ParseIntPipe) postId: number,
     @Body() createCommentDto: CreateCommentDto,
   ) {
     return this.postService.createComment(user.id, postId, createCommentDto);
@@ -144,7 +142,7 @@ export class PostController {
 
   @Get(':postId/comments')
   @ApiOperation({ summary: '댓글 목록 조회' })
-  getCommentsByPost(@Param('postId') postId: number) {
+  getCommentsByPost(@Param('postId', ParseIntPipe) postId: number) {
     return this.postService.getCommentsByPost(postId);
   }
 
@@ -154,7 +152,7 @@ export class PostController {
   @ApiBearerAuth('access-token')
   deleteComment(
     @CurrentUser() user: JwtUser,
-    @Param('commentId') commentId: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
   ) {
     return this.postService.deleteComment(user.id, commentId);
   }

@@ -9,6 +9,7 @@ export const IMAGE_PRESETS = {
     fit: 'inside',
     quality: 80,
   },
+  // 나중에 썸네일 등 확장 가능
 } as const;
 
 const MAX_IMAGE_PIXELS = 20_000_000; // 20MP
@@ -17,7 +18,7 @@ export async function processImageBuffer(
   fileBuffer: Buffer,
   preset: keyof typeof IMAGE_PRESETS,
 ): Promise<Buffer> {
-  // 1️⃣ preset 방어
+  // preset 방어
   const presetConfig = IMAGE_PRESETS[preset];
   if (!presetConfig) {
     throw BaseException.badRequest(
@@ -67,7 +68,6 @@ export async function processImageBuffer(
       .webp({ quality, effort: 4 })
       .toBuffer();
   } catch (err) {
-    // 이미 BaseException이면 그대로
     if (err instanceof BaseException) throw err;
 
     const msg = String(err instanceof Error ? err.message : '').toLowerCase();
@@ -85,7 +85,6 @@ export async function processImageBuffer(
       );
     }
 
-    // ❗sharp 내부 실패 → 서버 책임
     throw new BaseException(
       'Image processing failed',
       ErrorCode.INTERNAL_ERROR,

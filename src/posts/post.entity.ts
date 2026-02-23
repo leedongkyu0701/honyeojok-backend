@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   Index,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { PostImage } from './post-image.entity';
@@ -49,8 +50,8 @@ export class Post {
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Column({ nullable: true })
-  userId?: number;
+  @Column()
+  userId: number;
 
   @Column({ nullable: true })
   destinationId?: number;
@@ -60,7 +61,9 @@ export class Post {
   @OneToMany(() => PostLike, (like) => like.post)
   likes: PostLike[];
 
-  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'SET NULL' })
+  @ManyToOne(() => User, (user) => user.posts, {
+    onDelete: 'NO ACTION',
+  }) // 유저 탈퇴를 soft delete로 변경, 게시글은 남겨두되 작성자 정보는 '탈퇴한 혼여족'으로 표시
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -68,6 +71,7 @@ export class Post {
     onDelete: 'SET NULL',
     nullable: true,
   })
+  @JoinColumn({ name: 'destinationId' })
   destination?: Destination;
 
   @OneToMany(() => PostImage, (image) => image.post)
@@ -78,4 +82,7 @@ export class Post {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

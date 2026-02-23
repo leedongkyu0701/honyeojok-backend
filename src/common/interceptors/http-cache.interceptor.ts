@@ -13,7 +13,7 @@ type CachePolicy = {
   swr?: number; // stale-while-revalidate seconds
 };
 
-function buildCacheContorl(policy: CachePolicy): string {
+function buildCacheControl(policy: CachePolicy): string {
   const maxAge = policy.maxAge ?? 0;
   const sMaxAge = policy.sMaxAge ?? 0;
   const swr = policy.swr ?? 0;
@@ -34,7 +34,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const response = context.switchToHttp().getResponse<Response>();
 
-    response.setHeader('Cache-Control', buildCacheContorl(this.cachePolicy));
+    response.setHeader('Cache-Control', buildCacheControl(this.cachePolicy));
 
     return next.handle();
   }

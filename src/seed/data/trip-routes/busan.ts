@@ -216,7 +216,7 @@ export const busanTripRoutes: TripRouteSeedData[] = [
       {
         dayNumber: 2,
         title: '영도 바다 산책 + 오션뷰 카페',
-        note: '둘째 날은 영도 쪽에서 골목 산책을 길게 가져가고, 카페로 마무리하는 날이에요. 경사/계단이 있어 신발만 편하면 만족도가 높아요.',
+        note: '둘째 날은 영도 쪽에서 골목 산책을 길게 가져가고, 카페로 마무리하는 날이에요. 경사/계단이 있어 편한 신발을 추천해요.',
         items: [
           {
             order: 1,

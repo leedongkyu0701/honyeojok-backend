@@ -4,10 +4,9 @@ import { SpotController } from './spot.controller';
 import { Spot } from './spot.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Destination } from '../destinations/destination.entity';
-import { Tag } from '../tags/tag.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Spot, Destination, Tag])],
+  imports: [TypeOrmModule.forFeature([Spot, Destination])],
   providers: [SpotService],
   controllers: [SpotController],
   exports: [SpotService],

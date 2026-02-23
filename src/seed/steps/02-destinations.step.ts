@@ -10,7 +10,7 @@ export async function seedDestinations(m: EntityManager) {
   const destRepo = m.getRepository(Destination);
   const tagRepo = m.getRepository(Tag);
 
-  // 1) Destination upsert (tagSlugs는 컬럼이 아니므로 제거)
+  // 1) upsert으로 Destination 기본 데이터 저장 (tagSlugs: db컬럼이 아닌 필드는 제외)
   const upsertRows = destinations.map((d) => {
     const row = { ...d };
     delete row.tagSlugs;
@@ -29,7 +29,7 @@ export async function seedDestinations(m: EntityManager) {
   const tags = await tagRepo.find({ where: { slug: In(allTagSlugs) } });
   const tagBySlug = new Map(tags.map((t) => [t.slug, t]));
 
-  // 누락 태그 검사(오타/seed 순서 문제를 빨리 잡기 위해 추천)
+  // 누락 태그 검사
   const missing = allTagSlugs.filter((s) => !tagBySlug.has(s));
   if (missing.length > 0) {
     throw new Error(
@@ -39,16 +39,13 @@ export async function seedDestinations(m: EntityManager) {
     );
   }
 
-  // Destination 엔티티들을 한 번에 가져와서 Map 구성
   const destSlugs = destinations.map((d) => d.slug);
-
   const destEntities = await destRepo.find({
     where: { slug: In(destSlugs) },
     relations: ['tags'],
   });
 
   const destBySlug = new Map(destEntities.map((d) => [d.slug, d]));
-  // 효율을 위한 Map 생성
 
   // 3) tags 세팅 + save (조인 테이블 업데이트)
   for (const d of destinations) {

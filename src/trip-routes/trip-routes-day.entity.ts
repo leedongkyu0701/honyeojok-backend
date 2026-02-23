@@ -23,7 +23,7 @@ export class TripRouteDay {
   title: string;
 
   @Column({ type: 'text' })
-  note: string; // 그날 팁/주의사항
+  note: string; // 그날 팁
 
   @Column()
   tripRouteId: number;

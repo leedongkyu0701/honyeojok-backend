@@ -5,6 +5,7 @@ import type { Request } from 'express';
 @Injectable()
 export class JwtOptionalGuard extends AuthGuard('jwt-access') {
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // context : 요청에 대한 정보 담긴 객체
     const req = context.switchToHttp().getRequest<Request>();
 
     if (!req.header('authorization')) return true;

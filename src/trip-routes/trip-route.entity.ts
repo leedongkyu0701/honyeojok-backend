@@ -48,7 +48,6 @@ export class TripRoute {
 
   // 관계
   @ManyToOne(() => Destination, { onDelete: 'CASCADE' })
-  // ondelete: 'CASCADE' 옵션을 추가하여, Destination이 삭제될 때 관련된 TripRoute도 함께 삭제되도록 설정
   @JoinColumn({ name: 'destinationId' })
   destination: Destination;
 

@@ -7,6 +7,8 @@ export const jeonjuTripRoutes: TripRouteSeedData[] = [
     title: '전주 1박 2일 정석 루트 (핫스팟+동선 최적화)',
     summary:
       '한옥마을 핵심을 낮에 탄탄히 걷고, 저녁은 남부시장/객리단길로 마무리하는 가장 무난한 코스예요.',
+    honyeoTip:
+      '한옥마을은 낮에 걷는 게 사진도 잘 나오고, 동선도 편해요. 저녁은 남부시장/객리단길로 가면 혼자 먹기도 편하고, 선택지도 다양해요.',
     days: 2,
     honyeoCost: 180000,
     tagSlugs: ['culture', 'walking', 'emotional', 'nightview', 'solo-eating'],
@@ -14,7 +16,7 @@ export const jeonjuTripRoutes: TripRouteSeedData[] = [
       {
         dayNumber: 1,
         title: '한옥마을 핵심 + 언덕 포인트 + 저녁 먹거리',
-        note: '1일차는 “한옥마을 안쪽(경기전/성당) → 언덕(자만/오목대) → 아래(시장/객사)” 흐름만 지키면 동선이 거의 안 꼬여요. 점심 피크는 비켜가고, 해 질 무렵 오목대만 타이밍 맞추면 하루가 되게 단단해요.',
+        note: '1일차는 “한옥마을 안쪽(경기전/성당) → 언덕(자만/오목대) → 아래(시장/객사)” 흐름으로. 점심 피크는 비켜가고, 해 질 무렵 오목대만 타이밍 맞추면 하루가 되게 단단해요.',
         items: [
           {
             order: 1,
@@ -160,6 +162,8 @@ export const jeonjuTripRoutes: TripRouteSeedData[] = [
     title: '전주 1박 2일 맛·밤테마 루트 (야시장/막걸리 골목)',
     summary:
       '낮은 한옥 감성으로 가볍게 채우고, 밤은 야시장이나 막걸리골목으로 전주다운 여운을 남기는 코스예요.',
+    honyeoTip:
+      '낮에 욕심내기보다 핵심만 챙기고, 대신 밤을 “야시장 or 막걸리골목”으로 확실히 찍는 루트예요. 전주 혼술바도 여러개 있으니 지도에서 참고해주세요!',
     days: 2,
     honyeoCost: 190000,
     tagSlugs: ['walking', 'healing', 'thinking', 'nightview', 'solo-drinking'],

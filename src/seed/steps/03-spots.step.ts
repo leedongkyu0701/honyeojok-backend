@@ -38,7 +38,6 @@ export async function seedSpots(m: EntityManager) {
       ? []
       : await tagRepo.find({
           where: { slug: In(allTagSlugs) },
-          select: ['id', 'slug', 'label'],
         });
 
   const tagBySlug = new Map(tags.map((t) => [t.slug, t]));
@@ -49,7 +48,7 @@ export async function seedSpots(m: EntityManager) {
     );
   }
 
-  // 3) Spot upsert는 ManyToMany 때문에 애매해서, "slug unique 기반 findOne + save"가 가장 안전
+  // 3) Spot upsert는 ManyToMany 때문에 애매해서, slug unique 기반 findOne + save
   for (const s of spots) {
     const destinationId = destIdBySlug.get(s.regionSlug)!;
 
@@ -78,10 +77,7 @@ export async function seedSpots(m: EntityManager) {
     entity.address = s.address;
     entity.externalUrl = s.externalUrl;
 
-    // FK
     entity.destinationId = destinationId;
-
-    // ManyToMany
     entity.tags = (s.tagSlugs ?? []).map((slug) => tagBySlug.get(slug)!);
 
     await spotRepo.save(entity);

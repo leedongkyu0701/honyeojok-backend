@@ -23,7 +23,7 @@ export class CreateTripRouteItemDto {
   @Max(5)
   recommendedLevel?: number;
 
-  // ✅ Spot 연결용(선택)
+  // Spot 연결용(선택)
   @ApiPropertyOptional({ description: '연결할 Spot slug (선택)' })
   @IsOptional()
   @IsString()
@@ -33,12 +33,11 @@ export class CreateTripRouteItemDto {
   @IsString()
   title: string;
 
-  // ✅ 엔티티에서 필수(text)
   @ApiProperty({ description: '상세 설명(필수)' })
   @IsString()
   description: string;
 
-  // 커스텀 이미지/출처(선택)
+  // 커스텀 이미지/출처
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

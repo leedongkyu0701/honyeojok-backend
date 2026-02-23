@@ -1,4 +1,4 @@
-export class TagResponse {
+export interface TagResponse {
   slug: string;
   label: string;
 }

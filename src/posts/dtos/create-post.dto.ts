@@ -1,4 +1,3 @@
-// src/posts/dtos/create-post.dto.ts
 import {
   IsString,
   IsNotEmpty,
@@ -6,6 +5,7 @@ import {
   IsNumber,
   Min,
   Max,
+  IsEnum,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -24,7 +24,7 @@ export class CreatePostDto {
   content: string;
 
   @ApiProperty({ enum: PostType })
-  @IsNotEmpty()
+  @IsEnum(PostType)
   type: PostType;
 
   @ApiPropertyOptional()
@@ -44,8 +44,8 @@ export class CreatePostDto {
   captions?: string[];
 
   @ApiPropertyOptional()
-  @IsNumber()
   @IsOptional()
+  @IsNumber()
   @Min(0)
   @Max(5)
   @Transform(({ value }) =>

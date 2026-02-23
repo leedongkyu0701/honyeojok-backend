@@ -20,9 +20,11 @@ import { randomUUID } from 'crypto';
 import { processImageBuffer } from 'src/common/process-image';
 import { CommentResponseDto } from './dtos/comment.response';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class PostService {
+  private readonly logger = new Logger(PostService.name);
   constructor(
     @InjectRepository(Post)
     private readonly postRepo: Repository<Post>,
@@ -30,10 +32,10 @@ export class PostService {
     private readonly commentRepo: Repository<Comment>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly dataSource: DataSource,
-    private readonly r2Service: R2Service,
     @InjectRepository(PostLike)
     private readonly postLikeRepo: Repository<PostLike>,
+    private readonly dataSource: DataSource,
+    private readonly r2Service: R2Service,
     private readonly configService: ConfigService,
   ) {}
 
@@ -42,7 +44,7 @@ export class PostService {
     createPostDto: CreatePostDto,
     images?: Express.Multer.File[],
   ): Promise<PostCardResponse> {
-    const uploadedKeys: string[] = []; // 업로드된 이미지 키를 추적하기 위한 배열(나중에 삭제할 때 사용)
+    const uploadedKeys: string[] = []; // 업로드된 이미지 키 추적 배열 (r2 롤백용)
 
     if (this.configService.getOrThrow('IMAGE_UPLOAD_ENABLED') !== 'true') {
       throw BaseException.serviceUnavailable('Image uploads are disabled');
@@ -88,7 +90,6 @@ export class PostService {
         });
         await manager.save(post);
 
-        // 이미지가 있다면 R2에 업로드 및 PostImage 엔티티 생성
         if (images && images.length > 0) {
           const postImages: PostImage[] = [];
 
@@ -118,10 +119,10 @@ export class PostService {
               buffer,
             );
 
-            uploadedKeys.push(uniqueKey); // 업로드된 이미지 키 저장
+            uploadedKeys.push(uniqueKey);
 
             if (i === 0) {
-              thumbnailUrl = imageUrl; // 첫 번째 이미지를 썸네일로 설정
+              thumbnailUrl = imageUrl;
             }
 
             const postImage = manager.create(PostImage, {
@@ -145,7 +146,7 @@ export class PostService {
           title: post.title,
           region: post.region,
           createdAt: post.createdAt,
-          nickName: post.user.nickName,
+          nickName: post.user.nickName ?? '탈퇴한 혼여족',
           type: post.type,
           likeCount: post.likeCount,
           viewCount: post.viewCount,
@@ -177,7 +178,6 @@ export class PostService {
     post.isDeleted = true;
     await this.postRepo.save(post);
 
-    // 1️⃣ R2 이미지 삭제
     await Promise.allSettled(
       post.images.map((img) =>
         this.r2Service.deleteImage(
@@ -193,7 +193,10 @@ export class PostService {
         try {
           await this.r2Service.deleteImage(key);
         } catch (err) {
-          console.error('Failed to rollback image:', key, err);
+          this.logger.warn(
+            `rollbackImages failed : could not delete image with key ${key}`,
+            err,
+          );
         }
       }),
     );
@@ -238,7 +241,7 @@ export class PostService {
       region: post.region,
       type: post.type,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
       viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
@@ -249,7 +252,7 @@ export class PostService {
   async findPostsByRegionSlug(regionSlug: string): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
       where: { region: regionSlug, isDeleted: false },
-      relations: ['user', 'images'],
+      relations: ['user'],
       order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
     });
@@ -259,7 +262,7 @@ export class PostService {
       title: post.title,
       region: post.region,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
       type: post.type,
       viewCount: post.viewCount,
@@ -295,7 +298,7 @@ export class PostService {
       title: post.title,
       region: post.region,
       createdAt: post.createdAt,
-      nickName: post.user?.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       content: post.content,
       type: post.type,
       rating: post.rating,
@@ -322,7 +325,7 @@ export class PostService {
 
   async findBestPosts(): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
-      relations: ['user', 'images'],
+      relations: ['user'],
       where: { isDeleted: false },
       order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
@@ -333,7 +336,7 @@ export class PostService {
       region: post.region,
       type: post.type,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
       viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
@@ -375,7 +378,7 @@ export class PostService {
 
     if (parentId !== null) {
       const parent = await this.commentRepo.findOne({
-        where: { id: parentId, postId },
+        where: { id: parentId, postId }, // 부모 댓글이 같은 게시글에 속하는지 확인
         select: ['id', 'postId', 'parentId', 'isDeleted'],
       });
 
@@ -420,11 +423,11 @@ export class PostService {
         ErrorCode.RESOURCE_NOT_FOUND,
       );
     }
-    // 1) 해당 post의 댓글 전부 가져오기 (user join은 닉네임 필요할 때만)
+    // 1) 해당 post의 댓글 전부 가져오기
     const rows = await this.commentRepo.find({
       where: { postId },
       order: { createdAt: 'ASC' },
-      relations: { user: true }, // 닉네임 보여주려면 필요
+      relations: { user: true },
       select: {
         id: true,
         content: true,
@@ -446,10 +449,10 @@ export class PostService {
         createdAt: c.createdAt,
         parentId: c.parentId ?? null,
         postId: postId,
-        userId: c.userId,
+        userId: c.userId ?? null,
         user: {
           id: c.user?.id ?? c.userId,
-          nickName: c.user?.nickName ?? 'unknown',
+          nickName: c.user?.nickName ?? '탈퇴한 혼여족',
         },
         children: [],
       });
@@ -522,7 +525,6 @@ export class PostService {
       });
 
       if (existingLike) {
-        // 이미 좋아요가 눌러져 있으면 좋아요 취소
         await manager.delete(PostLike, { postId, userId });
         await manager.decrement(Post, { id: postId }, 'likeCount', 1);
         const updatedPost = await manager.findOne(Post, {

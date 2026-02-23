@@ -84,13 +84,11 @@ export class CreateSpotDto {
   @IsUrl()
   externalUrl?: string;
 
-  // 연결할 Destination slug
   @ApiProperty({ description: '소속 여행지 slug' })
   @IsString()
   @IsNotEmpty()
   destinationSlug: string;
 
-  // 태그는 slug 배열(최대 3개)
   @ApiPropertyOptional({
     enum: TagGroup,
     isArray: true,

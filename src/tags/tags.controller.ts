@@ -25,7 +25,7 @@ export class TagsController {
 
   @UseGuards(JwtAccessGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
-  @Delete(':slug')
+  @Delete()
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '태그 삭제' })
   async remove(@Body('slug') slug: string): Promise<{ ok: true }> {

@@ -1,7 +1,7 @@
 import { ImageSource } from 'src/types/util';
 import { SpotCategory } from 'src/types/spot';
-import imageMap from '../../../image-map.json';
-import type { SpotSeedData } from '../index';
+import imageMap from '../../image-map.json';
+import type { SpotSeedData } from './index';
 
 export const jeonjuSpots: SpotSeedData[] = [
   // 1) NATURE / ACTIVITY / ETC

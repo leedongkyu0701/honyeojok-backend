@@ -6,6 +6,8 @@ import {
   Body,
   UseGuards,
   Query,
+  Put,
+  Delete,
 } from '@nestjs/common';
 import { TripRoutesService } from './trip-routes.service';
 import { CreateTripRouteDto } from './dtos/create-trip-route.dto';
@@ -25,15 +27,14 @@ export class TripRoutesController {
   constructor(private readonly tripRoutesService: TripRoutesService) {}
 
   @Get('hot')
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   @ApiOperation({ summary: '인기 여행 루트 조회' })
   getHotRoutes() {
     return this.tripRoutesService.findHotRoutes();
   }
 
-  // 지역별 루트
   @Get('region/:region')
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   @ApiOperation({ summary: '지역별 여행 루트 목록 조회' })
   getRoutesByRegion(@Param('region') region: string) {
     return this.tripRoutesService.findByRegion(region);
@@ -53,9 +54,8 @@ export class TripRoutesController {
     );
   }
 
-  // 루트 상세
   @UseGuards(JwtOptionalGuard)
-  @Get(':region/:slug')
+  @Get('region/:region/:slug')
   @ApiOperation({ summary: '여행 루트 상세 조회' })
   @ApiBearerAuth('access-token')
   getRouteDetail(
@@ -75,7 +75,7 @@ export class TripRoutesController {
   }
 
   @UseGuards(JwtAccessGuard)
-  @Post('bookmark/add/:slug')
+  @Put('bookmark/add/:slug')
   @ApiOperation({ summary: '여행 루트 북마크 추가' })
   @ApiBearerAuth('access-token')
   addBookmark(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
@@ -83,7 +83,7 @@ export class TripRoutesController {
   }
 
   @UseGuards(JwtAccessGuard)
-  @Post('bookmark/remove/:slug')
+  @Delete('bookmark/remove/:slug')
   @ApiOperation({ summary: '여행 루트 북마크 삭제' })
   @ApiBearerAuth('access-token')
   removeBookmark(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {

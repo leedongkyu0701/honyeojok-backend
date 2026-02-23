@@ -21,7 +21,6 @@ import { SpotService } from 'src/spots/spot.service';
 @Injectable()
 export class TripRoutesService {
   constructor(
-    private readonly dataSource: DataSource,
     @InjectRepository(TripRoute)
     private readonly tripRouteRepo: Repository<TripRoute>,
 
@@ -34,6 +33,7 @@ export class TripRoutesService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
+    private readonly dataSource: DataSource,
     private readonly spotService: SpotService,
   ) {}
 
@@ -54,7 +54,6 @@ export class TripRoutesService {
     }));
   }
 
-  // 지역 slug로 여행 루트 목록 조회
   async findByRegion(region: string): Promise<TripRoutesCardResponse[]> {
     const destination = await this.destinationRepo.findOne({
       where: { slug: region },
@@ -87,7 +86,6 @@ export class TripRoutesService {
     }));
   }
 
-  // 지역 + 루트 slug로 상세 조회
   async findByRegionAndSlug(
     region: string,
     slug: string,
@@ -123,20 +121,14 @@ export class TripRoutesService {
       );
     }
 
-    let bookmarkedByMe = false;
-
-    if (userId) {
-      const existingBookmark = await this.bookmarkRepo.findOne({
-        where: {
-          tripRoute: { id: route.id },
-          user: { id: userId },
-        },
-      });
-
-      if (existingBookmark) {
-        bookmarkedByMe = true;
-      }
-    }
+    const bookmarkedByMe = userId
+      ? await this.bookmarkRepo.exists({
+          where: {
+            tripRoute: { id: route.id },
+            user: { id: userId },
+          },
+        })
+      : false;
 
     return {
       id: route.id,
@@ -210,7 +202,6 @@ export class TripRoutesService {
       return [];
     }
 
-    // ✅ 루트에 이미 포함된 spotId 제외 목록
     const excludeSpotIds = new Set<number>();
     for (const day of route.daysPlan ?? []) {
       for (const item of day.items ?? []) {
@@ -224,7 +215,7 @@ export class TripRoutesService {
       radiusKm,
       categories,
       limit: limit ?? 10,
-      excludeSpotIds: [...excludeSpotIds], // ✅ 추가
+      excludeSpotIds: [...excludeSpotIds],
     });
   }
 
@@ -392,41 +383,39 @@ export class TripRoutesService {
         );
       }
 
-      const existingBookmark = await manager.findOne(Bookmark, {
+      const existingBookmark = await manager.getRepository(Bookmark).findOne({
         where: {
           user: { id: userId },
-          tripRoute: { slug: tripRouteSlug },
+          tripRoute: { id: tripRoute.id },
         },
       });
 
       if (existingBookmark) {
-        // 북마크가 이미 존재하면 삭제
         await manager.remove(existingBookmark);
         await manager.decrement(
           TripRoute,
-          { slug: tripRouteSlug },
+          { id: tripRoute.id },
           'bookmarkCount',
           1,
         );
         const updatedRoute = await manager.findOne(TripRoute, {
-          where: { slug: tripRouteSlug },
+          where: { id: tripRoute.id },
         });
         return {
           bookmarked: false,
           bookmarkCount: updatedRoute!.bookmarkCount,
         };
       } else {
-        // 북마크가 없으면 생성
         const newBookmark = manager.create(Bookmark, { user, tripRoute });
         await manager.save(newBookmark);
         await manager.increment(
           TripRoute,
-          { slug: tripRouteSlug },
+          { id: tripRoute.id },
           'bookmarkCount',
           1,
         );
         const updatedRoute = await manager.findOne(TripRoute, {
-          where: { slug: tripRouteSlug },
+          where: { id: tripRoute.id },
         });
         return { bookmarked: true, bookmarkCount: updatedRoute!.bookmarkCount };
       }
@@ -434,85 +423,79 @@ export class TripRoutesService {
   }
 
   async addBookmark(userId: number, tripRouteSlug: string) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
-    const tripRoute = await this.tripRouteRepo.findOne({
-      where: { slug: tripRouteSlug },
-    });
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, { where: { id: userId } });
+      const tripRoute = await manager.findOne(TripRoute, {
+        where: { slug: tripRouteSlug },
+      });
 
-    if (!user || !tripRoute) {
-      throw BaseException.notFound(
-        'User or TripRoute not found',
-        ErrorCode.RESOURCE_NOT_FOUND,
+      if (!user || !tripRoute) {
+        throw BaseException.notFound(
+          'User or TripRoute not found',
+          ErrorCode.RESOURCE_NOT_FOUND,
+        );
+      }
+
+      const existingBookmark = await manager.getRepository(Bookmark).exists({
+        where: {
+          user: { id: userId },
+          tripRoute: { id: tripRoute.id },
+        },
+      });
+
+      if (existingBookmark) {
+        return { bookmarked: true, bookmarkCount: tripRoute.bookmarkCount };
+      }
+      const newBookmark = manager.create(Bookmark, { user, tripRoute });
+      await manager.save(newBookmark);
+      await manager.increment(
+        TripRoute,
+        { id: tripRoute.id },
+        'bookmarkCount',
+        1,
       );
-    }
-
-    const existingBookmark = await this.bookmarkRepo.findOne({
-      where: {
-        user: { id: userId },
-        tripRoute: { slug: tripRouteSlug },
-      },
+      const updatedRoute = await manager.findOne(TripRoute, {
+        where: { id: tripRoute.id },
+      });
+      return { bookmarked: true, bookmarkCount: updatedRoute!.bookmarkCount };
     });
-
-    if (existingBookmark) {
-      return {
-        bookmarked: true,
-        bookmarkCount: existingBookmark.tripRoute.bookmarkCount,
-      };
-    }
-
-    const newBookmark = this.bookmarkRepo.create({ user, tripRoute });
-    await this.bookmarkRepo.save(newBookmark);
-    await this.tripRouteRepo.increment(
-      { slug: tripRouteSlug },
-      'bookmarkCount',
-      1,
-    );
-
-    const updatedRoute = await this.tripRouteRepo.findOne({
-      where: { slug: tripRouteSlug },
-    });
-
-    return { bookmarked: true, bookmarkCount: updatedRoute!.bookmarkCount };
   }
 
   async removeBookmark(userId: number, tripRouteSlug: string) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
-    const tripRoute = await this.tripRouteRepo.findOne({
-      where: { slug: tripRouteSlug },
-    });
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, { where: { id: userId } });
+      const tripRoute = await manager.findOne(TripRoute, {
+        where: { slug: tripRouteSlug },
+      });
 
-    if (!user || !tripRoute) {
-      throw BaseException.notFound(
-        'User or TripRoute not found',
-        ErrorCode.RESOURCE_NOT_FOUND,
+      if (!user || !tripRoute) {
+        throw BaseException.notFound(
+          'User or TripRoute not found',
+          ErrorCode.RESOURCE_NOT_FOUND,
+        );
+      }
+
+      const existingBookmark = await manager.getRepository(Bookmark).findOne({
+        where: {
+          user: { id: userId },
+          tripRoute: { id: tripRoute.id },
+        },
+      });
+
+      if (!existingBookmark) {
+        return { bookmarked: false, bookmarkCount: tripRoute.bookmarkCount };
+      }
+      await manager.remove(existingBookmark);
+      await manager.decrement(
+        TripRoute,
+        { id: tripRoute.id },
+        'bookmarkCount',
+        1,
       );
-    }
-
-    const existingBookmark = await this.bookmarkRepo.findOne({
-      where: {
-        user: { id: userId },
-        tripRoute: { slug: tripRouteSlug },
-      },
+      const updatedRoute = await manager.findOne(TripRoute, {
+        where: { id: tripRoute.id },
+      });
+      return { bookmarked: false, bookmarkCount: updatedRoute!.bookmarkCount };
     });
-
-    if (!existingBookmark) {
-      throw BaseException.badRequest(
-        'Bookmark does not exist',
-        ErrorCode.BAD_REQUEST,
-      );
-    }
-
-    await this.bookmarkRepo.remove(existingBookmark);
-    await this.tripRouteRepo.decrement(
-      { slug: tripRouteSlug },
-      'bookmarkCount',
-      1,
-    );
-
-    const updatedRoute = await this.tripRouteRepo.findOne({
-      where: { slug: tripRouteSlug },
-    });
-
-    return { bookmarked: false, bookmarkCount: updatedRoute!.bookmarkCount };
   }
 }

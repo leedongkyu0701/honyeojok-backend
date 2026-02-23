@@ -7,6 +7,7 @@ export class SpotMapResponse {
 
   summary: string;
   category: SpotCategory;
+  imageUrl: string | null;
 
   lat: number | null;
   lng: number | null;

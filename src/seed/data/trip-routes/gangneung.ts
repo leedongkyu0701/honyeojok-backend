@@ -213,8 +213,7 @@ export const gangneungTripRoutes: TripRouteSeedData[] = [
             order: 7,
             recommendedLevel: 3,
             title: '저녁(선택)',
-            description:
-              '당일치기 마무리는 “바다 근처에서 짧게”가 제일 덜 피곤해요. 줄이 길면 과감히 포기하고 이동하는 쪽이 일정이 안 꼬여요.',
+            description: '당일치기 마무리는 “바다 근처에서',
             address: '강원특별자치도 강릉시 안목/강문 일대',
             startTime: '18:00',
             endTime: '19:20',
