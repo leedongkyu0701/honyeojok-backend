@@ -13,7 +13,9 @@ import { Post } from '../posts/post.entity';
 import { Bookmark } from '../trip-routes/bookmark.entity';
 import { Comment } from 'src/posts/comment.entity';
 
-@Index(['provider', 'providerId'], { unique: true })
+@Index('IDX_users_provider_provider_id_unique', ['provider', 'providerId'], {
+  unique: true,
+})
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()

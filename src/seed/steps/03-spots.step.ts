@@ -8,13 +8,24 @@ import { Tag } from '../../tags/tag.entity';
 import { spots } from '../data/spots/index';
 import { SpotCategory } from 'src/types/spot';
 
+function shuffleSpots<T>(arr: T[]) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export async function seedSpots(m: EntityManager) {
   const spotRepo = m.getRepository(Spot);
   const destRepo = m.getRepository(Destination);
   const tagRepo = m.getRepository(Tag);
 
+  // 0) 시드 데이터는 랜덤하게 섞어서 넣음 (id 순서대로 들어가는걸 방지하기 위해)
+  const arr = shuffleSpots(spots);
+
   // 1) Destination slug -> id (seed에 필요한 slug만)
-  const regionSlugs = Array.from(new Set(spots.map((s) => s.regionSlug)));
+  const regionSlugs = Array.from(new Set(arr.map((s) => s.regionSlug)));
   const dests = await destRepo.find({
     where: { slug: In(regionSlugs) },
     select: ['id', 'slug'],
@@ -29,9 +40,7 @@ export async function seedSpots(m: EntityManager) {
   }
 
   // 2) Tag slug -> Tag 엔티티 (seed에서 쓰는 태그만)
-  const allTagSlugs = Array.from(
-    new Set(spots.flatMap((s) => s.tagSlugs ?? [])),
-  );
+  const allTagSlugs = Array.from(new Set(arr.flatMap((s) => s.tagSlugs ?? [])));
 
   const tags =
     allTagSlugs.length === 0
@@ -49,7 +58,7 @@ export async function seedSpots(m: EntityManager) {
   }
 
   // 3) Spot upsert는 ManyToMany 때문에 애매해서, slug unique 기반 findOne + save
-  for (const s of spots) {
+  for (const s of arr) {
     const destinationId = destIdBySlug.get(s.regionSlug)!;
 
     const existing = await spotRepo.findOne({
@@ -78,6 +87,7 @@ export async function seedSpots(m: EntityManager) {
     entity.externalUrl = s.externalUrl;
 
     entity.destinationId = destinationId;
+
     entity.tags = (s.tagSlugs ?? []).map((slug) => tagBySlug.get(slug)!);
 
     await spotRepo.save(entity);

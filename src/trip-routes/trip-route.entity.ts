@@ -15,14 +15,17 @@ import { TripRouteDay } from './trip-routes-day.entity';
 import { Tag } from '../tags/tag.entity';
 import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Index(['destinationId', 'bookmarkCount'])
 @Entity('trip_routes')
+@Index('IDX_trip_routes_destination_id_bookmark_count_id', [
+  'destinationId',
+  'bookmarkCount',
+  'id',
+])
 export class TripRoute {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index({ unique: true })
-  @Column()
+  @Column({ unique: true })
   slug: string;
 
   @Column()

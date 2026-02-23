@@ -180,7 +180,7 @@ export class SpotService {
       where: { isRecommended: true },
       relations: ['destination', 'tags'],
       order: { id: 'DESC' },
-      take: 6,
+      take: 50, // 추천 스팟을 내려주고 프론트에서 랜덤하게 10개정도 뽑아 사용하는 정책
     });
 
     return spots.map((s) => this.toCard(s));

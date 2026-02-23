@@ -9,8 +9,10 @@ import {
 import { TripRouteDay } from './trip-routes-day.entity';
 import { Spot } from 'src/spots/spot.entity';
 
+@Index('IDX_trip_route_items_day_id_order_unique', ['dayId', 'order'], {
+  unique: true,
+})
 @Entity('trip_route_items')
-@Index(['dayId', 'order'], { unique: true })
 export class TripRouteItem {
   @PrimaryGeneratedColumn()
   id: number;

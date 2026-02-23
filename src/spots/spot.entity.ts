@@ -15,8 +15,11 @@ import { Tag } from '../tags/tag.entity';
 import { ImageSource } from 'src/types/util';
 import { SpotCategory } from 'src/types/spot';
 
-@Index(['destinationId', 'isRecommended', 'id'])
-@Index(['destinationId', 'id'])
+@Index('IDX_spots_destination_id_is_recommended_id', [
+  'destinationId',
+  'isRecommended',
+  'id',
+])
 @Entity('spots')
 export class Spot {
   @PrimaryGeneratedColumn()

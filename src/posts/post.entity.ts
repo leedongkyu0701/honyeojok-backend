@@ -16,8 +16,12 @@ import { Destination } from '../destinations/destination.entity';
 import { PostType } from '../types/post';
 import { PostLike } from './post_like.entity';
 
-@Index(['isDeleted', 'type', 'createdAt'])
-@Index(['userId', 'isDeleted', 'createdAt'])
+@Index('IDX_posts_is_deleted_created_at', ['isDeleted', 'createdAt'])
+@Index('IDX_posts_user_id_is_deleted_created_at', [
+  'userId',
+  'isDeleted',
+  'createdAt',
+])
 @Entity('posts')
 export class Post {
   @PrimaryGeneratedColumn()

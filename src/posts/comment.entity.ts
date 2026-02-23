@@ -12,7 +12,7 @@ import {
 import { User } from '../user/user.entity';
 import { Post } from './post.entity';
 
-@Index(['postId', 'createdAt'])
+@Index('IDX_comments_post_id_created_at', ['postId', 'createdAt'])
 @Entity('comments')
 export class Comment {
   @PrimaryGeneratedColumn()
@@ -24,14 +24,12 @@ export class Comment {
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Index()
   @Column()
   userId: number;
 
   @Column()
   postId: number;
 
-  @Index()
   @Column({ type: 'int', nullable: true })
   parentId: number | null;
 

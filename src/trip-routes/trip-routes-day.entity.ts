@@ -11,7 +11,11 @@ import { TripRoute } from './trip-route.entity';
 import { TripRouteItem } from './trip-route-item.entity';
 
 @Entity('trip_route_days')
-@Index(['tripRouteId', 'dayNumber'], { unique: true })
+@Index(
+  'IDX_trip_route_days_trip_route_id_day_number_unique',
+  ['tripRouteId', 'dayNumber'],
+  { unique: true },
+)
 export class TripRouteDay {
   @PrimaryGeneratedColumn()
   id: number;

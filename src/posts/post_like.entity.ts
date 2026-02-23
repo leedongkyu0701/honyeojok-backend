@@ -11,7 +11,9 @@ import { Post } from './post.entity';
 import { User } from '../user/user.entity';
 
 @Entity('post_likes')
-@Index(['postId', 'userId'], { unique: true }) // 중복 좋아요 방지
+@Index('IDX_post_likes_post_id_user_id_unique', ['postId', 'userId'], {
+  unique: true,
+}) // 중복 좋아요 방지
 export class PostLike {
   @PrimaryGeneratedColumn()
   id: number;
@@ -22,7 +24,6 @@ export class PostLike {
   @Column()
   userId: number;
 
-  @Index()
   @ManyToOne(() => Post, (post) => post.likes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'postId' })
   post: Post;
