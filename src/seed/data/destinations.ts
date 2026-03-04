@@ -29,7 +29,7 @@ interface DestinationSeedData {
 
 export const destinations: DestinationSeedData[] = [
   {
-    slug: 'mookho',
+    slug: 'mukho',
     province: ProvinceGroup.GANGWON,
     name: '묵호',
     rank: 1,
@@ -43,8 +43,9 @@ export const destinations: DestinationSeedData[] = [
     transport: 7,
     safety: 7,
     loneliness: 4,
-    imageUrl: imageMap.destinations['mookho'],
-    imageSource: ImageSource.UNSPLASH,
+    imageUrl: imageMap.destinations['mukho'],
+    imageSource: ImageSource.KTO,
+    imageCredit: 'ⓒ한국관광공사 포토코리아-이범수',
     tagSlugs: ['healing', 'sea', 'walking', 'thinking'],
   },
   {
@@ -82,8 +83,7 @@ export const destinations: DestinationSeedData[] = [
     safety: 9,
     loneliness: 2,
     imageUrl: imageMap.destinations['seoul'],
-    imageSource: ImageSource.KTO,
-    imageCredit: 'ⓒ한국관광공사 포토코리아-이범수',
+    imageSource: ImageSource.UNSPLASH,
     tagSlugs: ['culture', 'solo-drinking', 'shopping', 'nightview', 'oneday'],
   },
   {

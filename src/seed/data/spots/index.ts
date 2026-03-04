@@ -26,7 +26,7 @@ export interface SpotSeedData {
 
 import { busanSpots } from './busan';
 import { seoulSpots } from './seoul';
-import { mookhoSpots } from './mookho';
+import { mukhoSpots } from './mukho';
 import { jejuSpots } from './jeju';
 import { jeonjuSpots } from './jeonju';
 import { gangneungSpots } from './gangneung';
@@ -34,7 +34,7 @@ import { gangneungSpots } from './gangneung';
 export const spots: SpotSeedData[] = [
   ...seoulSpots,
   ...busanSpots,
-  ...mookhoSpots,
+  ...mukhoSpots,
   ...jejuSpots,
   ...jeonjuSpots,
   ...gangneungSpots,

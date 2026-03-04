@@ -46,7 +46,7 @@ export interface TripRouteSeedData {
 
 import { seoulTripRoutes } from './seoul';
 import { busanTripRoutes } from './busan';
-import { mookhoTripRoutes } from './mookho';
+import { mukhoTripRoutes } from './mukho';
 import { jejuTripRoutes } from './jeju';
 import { jeonjuTripRoutes } from './jeonju';
 import { gangneungTripRoutes } from './gangneung';
@@ -54,7 +54,7 @@ import { gangneungTripRoutes } from './gangneung';
 export const tripRoutes: TripRouteSeedData[] = [
   ...seoulTripRoutes,
   ...busanTripRoutes,
-  ...mookhoTripRoutes,
+  ...mukhoTripRoutes,
   ...jejuTripRoutes,
   ...jeonjuTripRoutes,
   ...gangneungTripRoutes,

@@ -1,8 +1,8 @@
 import { TripRouteSeedData } from './index';
-export const mookhoTripRoutes: TripRouteSeedData[] = [
+export const mukhoTripRoutes: TripRouteSeedData[] = [
   {
-    slug: 'mookho-sea-walking-1n2d',
-    destinationSlug: 'mookho',
+    slug: 'mukho-sea-walking-1n2d',
+    destinationSlug: 'mukho',
     title: '묵호 1박 2일 바다·골목 산책 루트',
     summary:
       '항구 골목에서 시작해 해변과 전망대로 이어가고, 둘째 날은 대표 해안 스팟으로 가볍게 정리해요.',
