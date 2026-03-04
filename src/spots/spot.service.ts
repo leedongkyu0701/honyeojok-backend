@@ -68,6 +68,7 @@ export class SpotService {
       lng: spot.lng ?? null,
 
       description: spot.description,
+      summary: spot.summary,
       honyeoTip: spot.honyeoTip ?? null,
 
       imageUrl: spot.imageUrl ?? null,
@@ -248,32 +249,37 @@ export class SpotService {
         maxLng: bbox.maxLng,
       });
 
-    // 루트에 포함된 spot 제외
     if (excludeSpotIds?.length) {
       qb.andWhere('s.id NOT IN (:...excludeSpotIds)', { excludeSpotIds });
     }
 
     const candidates = await qb.getMany();
 
-    // 후보 스팟들 중에서 실제 거리 계산하여 radiusKm 이내인 것만 필터링 (대략적인 bbox로 1차 필터링 했지만, 실제로는 더 멀리 있을 수 있기 때문 (원 형태 기준))
-    // 일단 Haversine 공식을 이용해서 계산해야 되지만 MVP애서는 그냥 bbox 필터링만으로 리턴
-
     const mapped = candidates
       .filter((s) => typeof s.lat === 'number' && typeof s.lng === 'number')
-      .map((s) => ({
-        id: s.id,
-        slug: s.slug,
-        name: s.name,
-        summary: s.summary,
-        category: s.category,
-        lat: s.lat!,
-        lng: s.lng!,
-        imageUrl: s.imageUrl ?? null,
-      }));
+      .map((s) => {
+        const spotPoint = { lat: s.lat!, lng: s.lng! };
+        const minDistance = this.minDistanceToPointsKm(spotPoint, points);
+
+        return {
+          id: s.id,
+          slug: s.slug,
+          name: s.name,
+          summary: s.summary,
+          category: s.category,
+          lat: s.lat!,
+          lng: s.lng!,
+          imageUrl: s.imageUrl ?? null,
+          minDistance: Number(minDistance.toFixed(2)),
+        };
+      });
+
+    const filtered = mapped.filter((s) => s.minDistance <= radiusKm); // 원 밖에 있는 후보는 제거
+    filtered.sort((a, b) => a.minDistance - b.minDistance);
 
     const results: Partial<Record<SpotCategory, SpotMapResponse[]>> = {};
     for (const c of cats) {
-      results[c] = mapped.filter((s) => s.category === c).slice(0, limit);
+      results[c] = filtered.filter((s) => s.category === c).slice(0, limit);
     }
     return results;
   }
@@ -304,6 +310,30 @@ export class SpotService {
 
   private toRad(deg: number) {
     return (deg * Math.PI) / 180;
+  }
+
+  private haversineKm(a: GeoPoint, b: GeoPoint) {
+    const R = 6371;
+    const dLat = this.toRad(b.lat - a.lat);
+    const dLng = this.toRad(b.lng - a.lng);
+
+    const lat1 = this.toRad(a.lat);
+    const lat2 = this.toRad(b.lat);
+
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+    return 2 * R * Math.asin(Math.sqrt(h)); // 두 지점 사이의 거리
+  }
+
+  private minDistanceToPointsKm(spot: GeoPoint, points: GeoPoint[]) {
+    let best = Infinity;
+    for (const p of points) {
+      const d = this.haversineKm(spot, p);
+      if (d < best) best = d;
+    }
+    return best;
   }
 
   async createOne(dto: CreateSpotDto): Promise<Spot> {

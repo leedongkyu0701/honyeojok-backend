@@ -10,6 +10,7 @@ export class SpotDetailResponse {
   category: SpotCategory;
 
   description: string;
+  summary: string;
   honyeoTip: string | null;
 
   imageUrl: string | null;

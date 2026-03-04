@@ -5,6 +5,7 @@ export class PostCardResponse {
   title: string;
 
   region?: string;
+  regionName?: string;
 
   createdAt: Date;
 

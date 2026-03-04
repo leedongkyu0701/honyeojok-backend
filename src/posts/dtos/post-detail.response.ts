@@ -5,6 +5,7 @@ export class PostDetailResponse {
   title: string;
 
   region?: string;
+  regionName?: string;
 
   createdAt: Date;
 

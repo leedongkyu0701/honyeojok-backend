@@ -239,6 +239,7 @@ export class PostService {
       id: post.id,
       title: post.title,
       region: post.region,
+      regionName: post.destination?.name ?? undefined,
       type: post.type,
       createdAt: post.createdAt,
       nickName: post.user.nickName ?? '탈퇴한 혼여족',
@@ -252,7 +253,7 @@ export class PostService {
   async findPostsByRegionSlug(regionSlug: string): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
       where: { region: regionSlug, isDeleted: false },
-      relations: ['user'],
+      relations: ['user', 'destination'],
       order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
     });
@@ -261,6 +262,7 @@ export class PostService {
       id: post.id,
       title: post.title,
       region: post.region,
+      regionName: post.destination?.name ?? undefined,
       createdAt: post.createdAt,
       nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
@@ -277,7 +279,7 @@ export class PostService {
   ): Promise<PostDetailResponse> {
     const post = await this.postRepo.findOne({
       where: { id: postId, isDeleted: false },
-      relations: ['user', 'images'],
+      relations: ['user', 'images', 'destination'],
     });
 
     if (!post) {
@@ -297,6 +299,7 @@ export class PostService {
       id: post.id,
       title: post.title,
       region: post.region,
+      regionName: post.destination?.name ?? undefined,
       createdAt: post.createdAt,
       nickName: post.user.nickName ?? '탈퇴한 혼여족',
       content: post.content,
@@ -325,7 +328,7 @@ export class PostService {
 
   async findBestPosts(): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
-      relations: ['user'],
+      relations: ['user', 'destination'],
       where: { isDeleted: false },
       order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
@@ -340,6 +343,7 @@ export class PostService {
       likeCount: post.likeCount,
       viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
+      regionName: post.destination?.name ?? undefined,
     }));
   }
 

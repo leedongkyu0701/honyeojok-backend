@@ -171,8 +171,6 @@ export async function seedTripRoutes(m: EntityManager) {
           startTime: i.startTime,
           endTime: i.endTime,
           externalUrl,
-
-          // ✅ spot 연결
           spotId: spot ? spot.id : undefined,
         });
       });

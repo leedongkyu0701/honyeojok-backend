@@ -219,6 +219,7 @@ export class TripRoutesService {
     });
   }
 
+  // 현재는 여행 루트 내 모든 점이라서 좀 넓게 서칭하는데, 나중에 가게들 늘어나면 day별로 점을 따로 뽑아서 서칭하는 것으로 리팩토링 예정
   private collectRoutePoints(route: TripRoute): GeoPoint[] {
     const raw: GeoPoint[] = [];
 
@@ -232,14 +233,12 @@ export class TripRoutesService {
       }
     }
 
-    // 중복 제거(너무 많은 points 방지)
     const uniq = new Map<string, GeoPoint>();
     for (const p of raw) {
       const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
       if (!uniq.has(key)) uniq.set(key, p);
     }
 
-    // 혹시 points가 너무 많아지면 제한
     const pts = Array.from(uniq.values());
     return pts.length > 30 ? pts.slice(0, 30) : pts;
   }

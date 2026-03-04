@@ -42,6 +42,7 @@ export class TripRoutesController {
 
   @Get('nearby-spots/:routeSlug')
   @ApiOperation({ summary: '여행 루트 주변 스팟 조회' })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   getNearbySpots(
     @Param('routeSlug') routeSlug: string,
     @Query() query: GetNearbySpotsQueryDto,

@@ -11,4 +11,5 @@ export class SpotMapResponse {
 
   lat: number | null;
   lng: number | null;
+  minDistance: number;
 }

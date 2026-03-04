@@ -76,7 +76,7 @@ export class PostController {
   }
 
   @Get('best')
-  @HttpCache({ maxAge: 600, sMaxAge: 3600, swr: 300 })
+  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 300 })
   @ApiOperation({ summary: '베스트 게시글 조회' })
   findBestPosts() {
     return this.postService.findBestPosts();
