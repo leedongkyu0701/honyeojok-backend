@@ -61,10 +61,12 @@ export class PostService {
             ErrorCode.RESOURCE_NOT_FOUND,
           );
         }
-
         let destination: Destination | undefined;
 
-        if (createPostDto.type === PostType.REVIEW) {
+        if (
+          createPostDto.type === PostType.REVIEW &&
+          createPostDto.regionSlug
+        ) {
           const find = await manager.findOne(Destination, {
             where: { slug: createPostDto.regionSlug },
           });
@@ -81,7 +83,7 @@ export class PostService {
           title: createPostDto.title,
           content: createPostDto.content,
           rating: createPostDto.rating,
-          destination,
+          destination: destination,
           type: createPostDto.type,
           region: createPostDto.regionSlug,
           user,
