@@ -8,10 +8,6 @@ export class ThrottlerCustomGuard extends ThrottlerGuard {
   protected async getTracker(req: Request): Promise<string> {
     const user = req?.user as JwtUser | undefined;
 
-    console.log('req.ip =', req.ip);
-    console.log('remoteAddress =', req.socket.remoteAddress);
-    console.log('x-forwarded-for =', req.headers['x-forwarded-for']);
-
     if (user && user.id) {
       return Promise.resolve(`user-${user.id}`);
     }
