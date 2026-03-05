@@ -7,6 +7,11 @@ import { JwtUser } from 'src/types/user';
 export class ThrottlerCustomGuard extends ThrottlerGuard {
   protected async getTracker(req: Request): Promise<string> {
     const user = req?.user as JwtUser | undefined;
+
+    console.log('req.ip =', req.ip);
+    console.log('remoteAddress =', req.socket.remoteAddress);
+    console.log('x-forwarded-for =', req.headers['x-forwarded-for']);
+
     if (user && user.id) {
       return Promise.resolve(`user-${user.id}`);
     }
@@ -18,11 +23,10 @@ export class ThrottlerCustomGuard extends ThrottlerGuard {
 
     // const xff = req.headers['x-forwarded-for'];
     // if (xff && typeof xff === 'string') {
-    //   console.log('ip=', req.ip, 'xff=', req.headers['x-forwarded-for']);
     //   return Promise.resolve(`ip-${xff.split(',')[0].trim()}`);
     // }
 
-    // console.log('ip=', req.ip);
+
     return Promise.resolve(`ip-${req.ip}`);
   }
 }
