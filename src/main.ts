@@ -11,7 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
-  expressApp.set('trust proxy', 1); // 클라우드 환경에서 프록시 서버 뒤에 있을 때 클라이언트의 IP 주소를 올바르게 인식하도록 설정
+  expressApp.set('trust proxy', true); // 클라우드 환경에서 프록시 서버 뒤에 있을 때 클라이언트의 IP 주소를 올바르게 인식하도록 설정
   expressApp.disable('x-powered-by'); // 보안 강화: Express가 'X-Powered-By' 헤더를 보내지 않도록 설정
   app.enableShutdownHooks(); // 애플리케이션이 종료될 때 graceful shutdown을 지원하도록 설정
 
