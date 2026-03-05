@@ -568,6 +568,110 @@ export const seoulSpots: SpotSeedData[] = [
     tagSlugs: ['solo-eating', 'oneday', 'walking', 'stress-relief'],
   },
 
+  {
+    regionSlug: 'seoul',
+    slug: 'nongmin-baekam-sundae-main',
+    name: '농민백암순대 본점',
+    summary: '진한 국물 순대국, 혼밥도 자연스러운 로컬 강자',
+    description: `농민백암순대 본점은 점심시간 회전이 빠른 순대국/국밥집이에요.
+혼자 가도 주문-식사-퇴장이 빠르게 돌아가는 구조라 눈치가 거의 없고,
+뜨끈한 한 그릇으로 든든하게 채우기 좋습니다.`,
+    honyeoTip: `• 점심 피크(12~13시)는 대기 가능성 높아 11시대 또는 14시 이후 추천
+• 혼자면 국밥 + 공기밥(기본 포함 여부 확인) 조합이 가장 무난
+• 식후 이동이 많은 날엔 포만감 높은 메뉴로 일정 버티기 좋음`,
+    category: SpotCategory.FOOD,
+    isRecommended: true,
+    address: '서울 강남구 선릉로86길 40-4',
+    lat: 37.5037329376349,
+    lng: 127.052982069884,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EB%86%8D%EB%AF%BC%EB%B0%B1%EC%95%94%EC%88%9C%EB%8C%80',
+    tagSlugs: ['solo-eating', 'culture', 'stress-relief'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'mibundang-sinchon-main',
+    name: '미분당 신촌본점',
+    summary: '1인석 중심 쌀국수, 혼밥 난이도 매우 낮음',
+    description: `미분당은 바 좌석 위주라 혼자 방문했을 때 가장 편한 편이에요.
+국물/면/고명 밸런스가 안정적이라 실패 확률이 낮고,
+‘조용히 한 끼’ 컨셉에 딱 맞는 곳입니다.`,
+    honyeoTip: `• 피크타임엔 줄이 생기니 11시대/15시대 같은 애매한 시간대 추천
+• 혼자면 바 자리 앉아서 먹기 좋음
+• 식후 바로 카페/산책 동선으로 이어가기 편함`,
+    category: SpotCategory.FOOD,
+    isRecommended: true,
+    address: '서울 서대문구 연세로 7',
+    lat: 37.5562869257678,
+    lng: 126.936627417338,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EB%AF%B8%EB%B6%84%EB%8B%B9%20%EC%8B%A0%EC%B4%8C%EB%B3%B8%EC%A0%90',
+    tagSlugs: ['solo-eating', 'oneday', 'stress-relief'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'gayang-kalguksu-boseot-maeuntang-yeouido',
+    name: '가양 칼국수 버섯매운탕 (여의도)',
+    summary: '칼칼한 버섯매운탕+칼국수 마무리, 혼밥도 가능한 든든한 한 끼',
+    description: `여의도에서 ‘국물로 리셋’하고 싶을 때 잘 맞는 스타일이에요.
+버섯매운탕으로 시작해서 칼국수로 마무리하는 흐름이 딱 정석이라
+혼자서도 만족감이 높은 편입니다.`,
+    honyeoTip: `• 점심시간 대기 가능성 높음 → 13시 이후 추천
+• 혼자라면 1인 가능 메뉴/세트 운영 여부를 현장/전화로 확인하면 안전
+• 매운 편이면 물/음료 미리 준비`,
+    category: SpotCategory.FOOD,
+    isRecommended: true,
+    address: '서울 영등포구 국제금융로 78 홍우빌딩',
+    lat: 37.5208724804701,
+    lng: 126.931298156696,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EA%B0%80%EC%96%91%20%EC%B9%BC%EA%B5%AD%EC%88%98%20%EB%B2%84%EC%84%AF%EB%A7%A4%EC%9A%B4%ED%83%95%20%EC%97%AC%EC%9D%98%EB%8F%84',
+    tagSlugs: ['solo-eating', 'stress-relief', 'culture'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'yuzu-ramen-seoul-station',
+    name: '유즈라멘 (서울역)',
+    summary: '유자 향 라멘, 혼자 빠르게 먹기 좋은 카운터 라멘',
+    description: `서울역 근처에서 ‘한 끼 깔끔하게’ 해결하기 좋은 라멘집이에요.
+국물에 유자 향이 들어가 느끼함이 덜하고,
+혼자 카운터에서 조용히 먹기 좋습니다.`,
+    honyeoTip: `• 열차 시간 맞춰야 하면 웨이팅 고려해서 여유 있게 이동
+• 혼자면 바 자리 선호로 빠르게 착석되는 편
+• 식사 후 바로 역사/환승 동선으로 이동하기 편함`,
+    category: SpotCategory.FOOD,
+    isRecommended: true,
+    address: '서울 중구 만리재로 209',
+    lat: 37.5560659151376,
+    lng: 126.968138607192,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EC%9C%A0%EC%A6%88%EB%9D%BC%EB%A9%98%20%EC%84%9C%EC%9A%B8%EC%97%AD',
+    tagSlugs: ['solo-eating', 'oneday', 'stress-relief'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'jinyoung-naengmyeon-doksan',
+    name: '진영면옥 (독산동)',
+    summary: '깔끔한 냉면/면요리, 혼자도 부담 적은 면 한 그릇',
+    description: `면요리는 혼밥 난이도가 낮은 편이라 독산 쪽 일정이면 묶기 좋아요.
+깔끔한 메뉴로 ‘가볍게 한 끼’ 혹은 ‘기름진 음식 뒤 리셋’ 용도로 적합합니다.`,
+    honyeoTip: `• 너무 붐비는 시간대만 피하면 혼자 자리 잡기 무난
+• 면요리는 식사 속도 조절이 쉬워 혼자 먹기 편함
+• 매장/주변 주차나 대중교통 접근성은 미리 체크`,
+    category: SpotCategory.FOOD,
+    isRecommended: true,
+    address: '서울 금천구 가산로 22',
+    lat: 37.4714180904807,
+    lng: 126.900598297931,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EC%A7%84%EC%98%81%EB%A9%B4%EC%98%A5%20%EB%8F%85%EC%82%B0%EB%8F%99',
+    tagSlugs: ['solo-eating', 'stress-relief', 'oneday'],
+  },
+
   // 3) CAFE
 
   {
@@ -682,6 +786,106 @@ export const seoulSpots: SpotSeedData[] = [
     tagSlugs: ['cafe', 'thinking', 'stress-relief', 'oneday'],
   },
 
+  {
+    regionSlug: 'seoul',
+    slug: 'beanbrothers-coffeehouse-seoul-sangsu',
+    name: '빈브라더스 커피하우스 서울 (상수)',
+    summary: '커피 퀄리티 안정적, 혼자 앉아 있기 좋은 스페셜티 카페',
+    description: `상수/합정 라인에서 혼자 커피 마시고 작업하거나 쉬기 좋은 곳이에요.
+커피 중심이라 ‘조용히 앉아 있기’가 자연스러운 분위기인 편입니다.`,
+    honyeoTip: `• 혼자 가면 창가/바 자리 선호로 자리 잡기 편함
+• 피크 시간대만 피하면 체류가 편함
+• 커피 취향(산미/고소) 말하면 추천받기 좋음`,
+    category: SpotCategory.CAFE,
+    isRecommended: true,
+    address: '서울 마포구 와우산로 130',
+    lat: 37.5533783294755,
+    lng: 126.927990692848,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EB%B9%88%EB%B8%8C%EB%9D%BC%EB%8D%94%EC%8A%A4%20%EC%BB%A4%ED%94%BC%ED%95%98%EC%9A%B0%EC%8A%A4%20%EC%84%9C%EC%9A%B8',
+    tagSlugs: ['cafe', 'thinking', 'stress-relief'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'another-side-balsan',
+    name: '어나더사이드 (발산역)',
+    summary: '발산역 근처, 혼자 쉬기 좋은 동네 카페',
+    description: `발산/마곡 라인에서 일정 중간에 쉬기 좋은 카페로 넣기 좋아요.
+너무 관광지 느낌이 아니라 혼자 있어도 편한 편입니다.`,
+    honyeoTip: `• 혼자면 음료+디저트 한 개로 오래 쉬기 좋음
+• 붐비는 시간대만 피하면 자리 잡기 수월
+• 대화보단 혼자 쉬기/정리하기에 더 잘 맞는 편`,
+    category: SpotCategory.CAFE,
+    isRecommended: true,
+    address: '서울 강서구 공항대로 247',
+    lat: 37.5593135416408,
+    lng: 126.83523920295,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EC%96%B4%EB%82%98%EB%8D%94%EC%82%AC%EC%9D%B4%EB%93%9C%20%EB%B0%9C%EC%82%B0',
+    tagSlugs: ['cafe', 'healing', 'emotional'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'train-landscape-cafe-gongneung',
+    name: '기차가 있는 풍경 (공릉)',
+    summary: '공릉 감성 카페, 조용히 머물기 좋은 분위기',
+    description: `공릉 쪽에서 ‘잠깐 멈춰 쉬는’ 느낌으로 들르기 좋은 카페예요.
+분위기 감상하면서 혼자 멍때리기/책 읽기 좋은 타입으로 넣기 좋습니다.`,
+    honyeoTip: `• 평일 낮이 가장 한적
+• 사진도 좋지만 오래 앉아 쉬는 목적에 더 잘 맞음
+• 가까운 산책 동선이 있다면 묶기 좋음`,
+    category: SpotCategory.CAFE,
+    isRecommended: true,
+    address: '서울 노원구 공릉로 130',
+    lat: 37.6215942155719,
+    lng: 127.079275058566,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EA%B8%B0%EC%B0%A8%EA%B0%80%20%EC%9E%88%EB%8A%94%20%ED%92%8D%EA%B2%BD%20%EA%B3%B5%EB%A6%89',
+    tagSlugs: ['cafe', 'emotional', 'healing'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'low-coffee-stand-seongsu',
+    name: '로우 커피 스탠드 (성수)',
+    summary: '성수 감성 에스프레소/커피 스탠드, 혼카페에 강함',
+    description: `성수에서 동선 중간에 ‘짧고 굵게 커피’ 하기 좋은 타입이에요.
+스탠드/캐주얼 동선이어서 혼자 들르기 자연스럽습니다.`,
+    honyeoTip: `• 대기 있을 수 있으니 일정 촘촘하면 여유 있게
+• 짧게 한 잔 마시고 다음 코스로 이동하기 좋음
+• 성수 편집숍/서울숲 동선과 궁합 좋음`,
+    category: SpotCategory.CAFE,
+    isRecommended: true,
+    address: '서울 성동구 왕십리로4길 28-2',
+    lat: 37.5471177960535,
+    lng: 127.04661114401,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EB%A1%9C%EC%9A%B0%20%EC%BB%A4%ED%94%BC%20%EC%8A%A4%ED%83%A0%EB%93%9C%20%EC%84%B1%EC%88%98',
+    tagSlugs: ['cafe', 'emotional', 'oneday'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'pines-myeongdong',
+    name: '파인즈 (명동)',
+    summary: '명동성당 뷰로 유명한 테라스 카페, 혼자도 분위기 좋음',
+    description: `명동에서 ‘뷰 보면서 커피’가 확실한 카페예요.
+혼자 앉아도 어색하지 않은 분위기고,
+도심 한복판에서 잠깐 쉬기 좋은 포인트로 넣기 좋습니다.`,
+    honyeoTip: `• 테라스는 날씨 영향 크니 방문 전 기온 체크
+• 사람 많을 땐 창가/테라스 자리 경쟁 있음 → 오픈 시간대 추천
+• 명동/을지로/남산 동선에 끼워 넣기 좋음`,
+    category: SpotCategory.CAFE,
+    isRecommended: true,
+    address: '서울 중구 명동길 73 3층',
+    lat: 37.5643902978361,
+    lng: 126.986231381248,
+    externalUrl: 'https://www.diningcode.com/profile.php?rid=RUH02gDorqot',
+    tagSlugs: ['cafe', 'nightview', 'emotional'],
+  },
+
   // 4) DRINK
 
   {
@@ -721,7 +925,7 @@ export const seoulSpots: SpotSeedData[] = [
 • 분위기를 고려해 깔끔한 복장을 추천하며, 귀가 교통편을 미리 체크하세요.`,
     category: SpotCategory.DRINK,
     isRecommended: true,
-    address: '서울특별시 강남구 도산대로55길 42 지하 1층',
+    address: '서울특별시 강남구 도산대로55길 42',
     lat: 37.526255545851,
     lng: 127.041127909578,
     externalUrl: 'https://place.map.kakao.com/25689487',
@@ -744,7 +948,7 @@ export const seoulSpots: SpotSeedData[] = [
 • 과한 음주는 피하며 1~2잔 정도 가볍게 즐기는 것을 추천해요.`,
     category: SpotCategory.DRINK,
     isRecommended: true,
-    address: '서울특별시 강남구 도산대로55길 47 지하 1층',
+    address: '서울특별시 강남구 도산대로55길 47',
     lat: 37.5266775490869,
     lng: 127.040943739564,
     externalUrl: 'https://place.map.kakao.com/26857068',
@@ -766,10 +970,108 @@ export const seoulSpots: SpotSeedData[] = [
 • 남산 순환버스 정류장이 가까워 일정 마무리 동선을 짜기 편리합니다.`,
     category: SpotCategory.DRINK,
     isRecommended: true,
-    address: '서울특별시 용산구 녹사평대로 218 1층, 4층',
+    address: '서울특별시 용산구 녹사평대로 218',
     lat: 37.5371226680306,
     lng: 126.987065867141,
     externalUrl: 'https://place.map.kakao.com/26972066?openhour=1',
     tagSlugs: ['solo-drinking', 'stress-relief', 'nightview', 'emotional'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'ryu-jiro-gunja',
+    name: '류지로 (군자역)',
+    summary: '조용한 한 잔 하기 좋은 동네 술집',
+    description: `군자역 인근에서 가볍게 혼술하기 좋은 스팟이에요.
+바 자리나 작은 테이블 중심이면 혼자 가도 분위기에 잘 섞입니다.`,
+    honyeoTip: `• 혼술은 평일 초저녁(오픈 직후)이 가장 편함
+• 1~2잔 + 간단 안주로 ‘딱’ 즐기고 마무리하기 좋음
+• 만석이면 주변 2차 플랜 하나 준비`,
+    category: SpotCategory.DRINK,
+    isRecommended: true,
+    address: '서울 광진구 능동로 289',
+    lat: 37.5557904109818,
+    lng: 127.078344497368,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%EB%A5%98%EC%A7%80%EB%A1%9C%20%EA%B5%B0%EC%9E%90',
+    tagSlugs: ['solo-drinking', 'emotional', 'nightview'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'hanamato-sindorim',
+    name: '하나마토 (신도림)',
+    summary: '신도림에서 혼자 가볍게 한 잔 하기 좋은 이자카야 무드',
+    description: `신도림 쪽에서 일정 마무리로 ‘한 잔 정리’하기 좋게 잡기 좋은 곳이에요.
+바 좌석이 있으면 혼술 난이도는 더 내려갑니다.`,
+    honyeoTip: `• 금/토는 붐빌 수 있어 평일 추천
+• 혼자면 바 자리 요청(가능 시)이 가장 편함
+• 막차/귀가 동선 먼저 체크`,
+    category: SpotCategory.DRINK,
+    isRecommended: true,
+    address: '서울 구로구 경인로 662',
+    lat: 37.5081230677129,
+    lng: 126.888212953215,
+    externalUrl:
+      'https://www.diningcode.com/list.dc?query=%ED%95%98%EB%82%98%EB%A7%88%ED%86%A0%20%EC%8B%A0%EB%8F%84%EB%A6%BC',
+    tagSlugs: ['solo-drinking', 'emotional', 'stress-relief'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'hiro-yeonhui',
+    name: '희로 (연희동)',
+    summary: '연희동 감성 술집, 혼자 조용히 마시기 좋은 편',
+    description: `연희동 특유의 조용한 골목 분위기랑 잘 맞는 타입이에요.
+혼자 가도 ‘분위기 구경 + 한 잔’이 성립하는 곳으로 잡기 좋습니다.`,
+    honyeoTip: `• 주말엔 붐빌 수 있으니 평일 저녁 추천
+• 안주 1개만 시켜도 괜찮은지 분위기 보고 결정
+• 2차보단 1차로 가볍게 시작하기 좋음`,
+    category: SpotCategory.DRINK,
+    isRecommended: true,
+    address: '서울 서대문구 성산로 325',
+    lat: 37.5664378926034,
+    lng: 126.926488543469,
+
+    externalUrl: 'https://www.diningcode.com/profile.php?rid=Y4CCVjRjEEkp',
+    tagSlugs: ['solo-drinking', 'emotional', 'nightview'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'querer-sinseoldong',
+    name: '꿰레 (신설동역)',
+    summary: '감성 한 잔 가능한 작은 공간, 혼술도 무난',
+    description: `신설동 쪽에서 혼자 한 잔 하기 좋은 스팟으로 넣기 좋아요.
+너무 시끄러운 분위기만 아니면 혼자 가도 편하게 즐길 수 있습니다.`,
+    honyeoTip: `• 자리 적으면 오픈 시간대가 편함
+• 혼자면 안주 1개 + 하이볼/맥주 같은 가벼운 조합 추천
+• 귀가 동선 체크(막차/택시)`,
+    category: SpotCategory.DRINK,
+    isRecommended: true,
+    address: '서울 종로구 보문로1길 9',
+    lat: 37.5763797683226,
+    lng: 127.022472670243,
+    externalUrl: 'https://www.diningcode.com/profile.php?rid=W8jeTm6qqdQ4',
+    tagSlugs: ['solo-drinking', 'emotional', 'hidden'],
+  },
+
+  {
+    regionSlug: 'seoul',
+    slug: 'yeoljeong-taco-yeonnam',
+    name: '열정타코 (연남)',
+    summary: '타코야키/야끼소바에 맥주 한 잔, 혼술도 가능한 연남 스팟',
+    description: `연남에서 ‘가볍게 먹으면서 한 잔’ 하기 좋은 타입이에요.
+메뉴가 부담스럽지 않아서 혼자 가도 페이스 조절이 쉽습니다.`,
+    honyeoTip: `• 혼자면 8알/소량 메뉴로 시작하면 부담 적음
+• 연남은 주말 밤 붐빔 → 평일/이른 시간 추천
+• 1차로 들러서 산책 후 귀가 루트 잡기 좋음`,
+    category: SpotCategory.DRINK,
+    isRecommended: true,
+    address: '서울 마포구 성미산로29길 20',
+    lat: 37.5649884973702,
+    lng: 126.922461615149,
+    externalUrl: 'https://www.diningcode.com/profile.php?rid=B7hiz8jg4l0l',
+    tagSlugs: ['solo-drinking', 'solo-eating', 'emotional'],
   },
 ];

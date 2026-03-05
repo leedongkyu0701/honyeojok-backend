@@ -154,6 +154,81 @@
       "lat": 37.5371226680306,
       "lng": 126.987065867141,
       "address": "서울 용산구 녹사평대로 218"
+    },
+    "nongmin-baekam-sundae-main": {
+      "lat": 37.5037329376349,
+      "lng": 127.052982069884,
+      "address": "서울 강남구 선릉로86길 40-4"
+    },
+    "mibundang-sinchon-main": {
+      "lat": 37.5562869257678,
+      "lng": 126.936627417338,
+      "address": "서울 서대문구 연세로 7"
+    },
+    "gayang-kalguksu-boseot-maeuntang-yeouido": {
+      "lat": 37.5208724804701,
+      "lng": 126.931298156696,
+      "address": "서울 영등포구 국제금융로 78"
+    },
+    "yuzu-ramen-seoul-station": {
+      "lat": 37.5560659151376,
+      "lng": 126.968138607192,
+      "address": "서울 중구 만리재로 209"
+    },
+    "jinyoung-naengmyeon-doksan": {
+      "lat": 37.4714180904807,
+      "lng": 126.900598297931,
+      "address": "서울 금천구 가산로 22"
+    },
+    "beanbrothers-coffeehouse-seoul-sangsu": {
+      "lat": 37.5533783294755,
+      "lng": 126.927990692848,
+      "address": "서울 마포구 와우산로 130"
+    },
+    "another-side-balsan": {
+      "lat": 37.5593135416408,
+      "lng": 126.83523920295,
+      "address": "서울 강서구 공항대로 247"
+    },
+    "train-landscape-cafe-gongneung": {
+      "lat": 37.6215942155719,
+      "lng": 127.079275058566,
+      "address": "서울 노원구 공릉로 130"
+    },
+    "low-coffee-stand-seongsu": {
+      "lat": 37.5471177960535,
+      "lng": 127.04661114401,
+      "address": "서울 성동구 왕십리로4길 28-2"
+    },
+    "pines-myeongdong": {
+      "lat": 37.5643902978361,
+      "lng": 126.986231381248,
+      "address": "서울 중구 명동길 73"
+    },
+    "ryu-jiro-gunja": {
+      "lat": 37.5557904109818,
+      "lng": 127.078344497368,
+      "address": "서울 광진구 능동로 289"
+    },
+    "hanamato-sindorim": {
+      "lat": 37.5081230677129,
+      "lng": 126.888212953215,
+      "address": "서울 구로구 경인로 662"
+    },
+    "hiro-yeonhui": {
+      "lat": 37.5664378926034,
+      "lng": 126.926488543469,
+      "address": "서울 서대문구 성산로 325"
+    },
+    "querer-sinseoldong": {
+      "lat": 37.5763797683226,
+      "lng": 127.022472670243,
+      "address": "서울 종로구 보문로1길 9"
+    },
+    "yeoljeong-taco-yeonnam": {
+      "lat": 37.5649884973702,
+      "lng": 126.922461615149,
+      "address": "서울 마포구 성미산로29길 20"
     }
   },
   "busan": {
