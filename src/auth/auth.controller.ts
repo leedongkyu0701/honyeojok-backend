@@ -246,6 +246,7 @@ export class AuthController {
     @Req() req: CookieRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log(req.cookies.refreshToken, req.headers.cookie);
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
       throw BaseException.unauthorized(
