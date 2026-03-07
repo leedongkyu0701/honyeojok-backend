@@ -47,10 +47,15 @@ async function bootstrap() {
     });
   }
 
-  const FRONTEND_ORIGIN =
-    process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://honyeojok-front-git-develop-leedongkyus-projects-c6361242.vercel.app',
+    'https://honyeojok.com',
+    'https://www.honyeojok.com',
+  ];
+
   app.enableCors({
-    origin: FRONTEND_ORIGIN,
+    origin: allowedOrigins,
     credentials: true,
   });
 
