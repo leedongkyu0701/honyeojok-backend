@@ -12,6 +12,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerCustomGuard } from './common/guards/throttler.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
+import { DbShutdownService } from './common/db-shutdown.service';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { HealthModule } from './health/health.module';
       provide: APP_GUARD,
       useClass: ThrottlerCustomGuard,
     },
+    DbShutdownService,
   ],
 })
 export class AppModule {}

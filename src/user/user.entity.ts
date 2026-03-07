@@ -13,14 +13,16 @@ import { Post } from '../posts/post.entity';
 import { Bookmark } from '../trip-routes/bookmark.entity';
 import { Comment } from 'src/posts/comment.entity';
 
-@Index(['provider', 'providerId'], { unique: true })
+@Index('IDX_users_provider_provider_id_unique', ['provider', 'providerId'], {
+  unique: true,
+})
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'varchar', nullable: true })
-  email: string | null;
+  email?: string | null;
 
   @Column({ type: 'enum', enum: AuthProvider })
   provider: AuthProvider;
@@ -31,14 +33,14 @@ export class User {
   @Column({ default: false })
   isDeleted: boolean;
 
-  @Column({ unique: true })
-  nickName: string;
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  nickName: string | null;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Column({ type: 'varchar', nullable: true })
-  refreshToken: string | null;
+  @Column({ type: 'text', nullable: true })
+  refreshToken?: string | null;
 
   @OneToMany(() => Post, (post) => post.user)
   posts: Post[];

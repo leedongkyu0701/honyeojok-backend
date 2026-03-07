@@ -5,7 +5,7 @@ export class CommentUserResponseDto {
 
 export class CommentResponseDto {
   id: number;
-  content: string; // isDeleted면 '' 또는 '삭제된 댓글입니다' 정책 선택
+  content: string;
   isDeleted: boolean;
   createdAt: Date;
 

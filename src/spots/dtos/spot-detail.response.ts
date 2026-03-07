@@ -1,25 +1,29 @@
-import { ImageSource } from 'src/types/destination';
+import { ImageSource } from 'src/types/util';
 import type { TagResponse } from 'src/types/tag';
+import { SpotCategory } from 'src/types/spot';
 
 export class SpotDetailResponse {
   id: number;
   slug: string;
   name: string;
 
-  note: string | null;
+  category: SpotCategory;
+
   description: string;
+  summary: string;
+  honyeoTip: string | null;
 
   imageUrl: string | null;
   imageSource: ImageSource | null;
   imageCredit: string | null;
-  address: string | null;
 
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
   externalUrl: string | null;
 
   tags: TagResponse[];
-  isRecommended: boolean;
 
-  // 소속 여행지 정보 (최소)
   destination: {
     id: number;
     slug: string;

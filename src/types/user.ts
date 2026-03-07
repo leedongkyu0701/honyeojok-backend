@@ -12,7 +12,7 @@ export enum AuthProvider {
 
 export interface JwtUser {
   id: number;
-  email?: string | null;
+  email?: string;
   role: UserRole;
   provider: AuthProvider;
 }

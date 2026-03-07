@@ -5,9 +5,9 @@ import {
   ManyToOne,
   OneToMany,
   CreateDateColumn,
-  UpdateDateColumn,
   Index,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { PostImage } from './post-image.entity';
@@ -16,8 +16,12 @@ import { Destination } from '../destinations/destination.entity';
 import { PostType } from '../types/post';
 import { PostLike } from './post_like.entity';
 
-@Index(['isDeleted', 'type', 'createdAt'])
-@Index(['userId', 'isDeleted', 'createdAt'])
+@Index('IDX_posts_is_deleted_created_at', ['isDeleted', 'createdAt'])
+@Index('IDX_posts_user_id_is_deleted_created_at', [
+  'userId',
+  'isDeleted',
+  'createdAt',
+])
 @Entity('posts')
 export class Post {
   @PrimaryGeneratedColumn()
@@ -41,6 +45,9 @@ export class Post {
   @Column({ default: 0 })
   likeCount: number;
 
+  @Column({ type: 'int', default: 0 })
+  viewCount: number;
+
   @Column({ nullable: true })
   thumbnailUrl?: string;
 
@@ -50,23 +57,31 @@ export class Post {
   @Column()
   userId: number;
 
-  @OneToMany(() => PostLike, (like) => like.post, { cascade: true })
+  @Column({ nullable: true })
+  destinationId?: number;
+
+  // 관계
+
+  @OneToMany(() => PostLike, (like) => like.post)
   likes: PostLike[];
 
-  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.posts, {
+    onDelete: 'NO ACTION',
+  }) // 유저 탈퇴를 soft delete로 변경, 게시글은 남겨두되 작성자 정보는 '탈퇴한 혼여족'으로 표시
   @JoinColumn({ name: 'userId' })
   user: User;
 
   @ManyToOne(() => Destination, (destination) => destination.posts, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
     nullable: true,
   })
+  @JoinColumn({ name: 'destinationId' })
   destination?: Destination;
 
-  @OneToMany(() => PostImage, (image) => image.post, { cascade: true })
+  @OneToMany(() => PostImage, (image) => image.post)
   images: PostImage[];
 
-  @OneToMany(() => Comment, (comment) => comment.post, { cascade: true })
+  @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 
   @CreateDateColumn()

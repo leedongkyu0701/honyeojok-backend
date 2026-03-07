@@ -1,4 +1,3 @@
-// src/trip-routes/trip-route.entity.ts
 import {
   Entity,
   Column,
@@ -16,19 +15,18 @@ import { TripRouteDay } from './trip-routes-day.entity';
 import { Tag } from '../tags/tag.entity';
 import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Index(['destinationId', 'bookmarkCount'])
-@Entity()
+@Entity('trip_routes')
+@Index('IDX_trip_routes_destination_id_bookmark_count_id', [
+  'destinationId',
+  'bookmarkCount',
+  'id',
+])
 export class TripRoute {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Index({ unique: true })
-  @Column()
+  @Column({ unique: true })
   slug: string;
-
-  @Index()
-  @Column()
-  region: string;
 
   @Column()
   title: string;
@@ -36,8 +34,14 @@ export class TripRoute {
   @Column({ length: 300 })
   summary: string;
 
+  @Column({ type: 'text', nullable: true })
+  honyeoTip?: string;
+
   @Column('int')
   days: number;
+
+  @Column('int', { nullable: true })
+  honyeoCost?: number;
 
   @Column('int', { default: 0 })
   bookmarkCount: number;
@@ -47,14 +51,13 @@ export class TripRoute {
 
   // 관계
   @ManyToOne(() => Destination, { onDelete: 'CASCADE' })
-  // ondelete: 'CASCADE' 옵션을 추가하여, Destination이 삭제될 때 관련된 TripRoute도 함께 삭제되도록 설정
   @JoinColumn({ name: 'destinationId' })
   destination: Destination;
 
   @OneToMany(() => Bookmark, (bookmark) => bookmark.tripRoute)
   bookmarks: Bookmark[];
 
-  @OneToMany(() => TripRouteDay, (day) => day.tripRoute, { cascade: true })
+  @OneToMany(() => TripRouteDay, (day) => day.tripRoute)
   daysPlan: TripRouteDay[];
 
   @JoinTable({ name: 'trip_route_tags' })

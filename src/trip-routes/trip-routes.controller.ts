@@ -1,4 +1,14 @@
-import { Controller, Get, Param, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Body,
+  UseGuards,
+  Query,
+  Put,
+  Delete,
+} from '@nestjs/common';
 import { TripRoutesService } from './trip-routes.service';
 import { CreateTripRouteDto } from './dtos/create-trip-route.dto';
 import { CurrentUser } from 'src/auth/decorator/current-user.decorator';
@@ -9,6 +19,7 @@ import { JwtOptionalGuard } from 'src/auth/guards/jwt-optional.guard';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { RoleGuard } from 'src/auth/guards/role.guard';
 import { Roles } from 'src/auth/decorator/roles.decorator';
+import { GetNearbySpotsQueryDto } from './dtos/get-nearby-spots.query.dto';
 
 @ApiTags('TripRoutes')
 @Controller('trip-routes')
@@ -16,22 +27,36 @@ export class TripRoutesController {
   constructor(private readonly tripRoutesService: TripRoutesService) {}
 
   @Get('hot')
-  @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 60 })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   @ApiOperation({ summary: '인기 여행 루트 조회' })
   getHotRoutes() {
     return this.tripRoutesService.findHotRoutes();
   }
 
-  // 지역별 전체 루트
   @Get('region/:region')
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
   @ApiOperation({ summary: '지역별 여행 루트 목록 조회' })
   getRoutesByRegion(@Param('region') region: string) {
     return this.tripRoutesService.findByRegion(region);
   }
 
-  // 지역 + 루트 상세
+  @Get('nearby-spots/:routeSlug')
+  @ApiOperation({ summary: '여행 루트 주변 스팟 조회' })
+  @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
+  getNearbySpots(
+    @Param('routeSlug') routeSlug: string,
+    @Query() query: GetNearbySpotsQueryDto,
+  ) {
+    return this.tripRoutesService.getNearbySpots(
+      routeSlug,
+      query.radiusKm ?? 3,
+      query.categories,
+      query.limit,
+    );
+  }
+
   @UseGuards(JwtOptionalGuard)
-  @Get(':region/:slug')
+  @Get('region/:region/:slug')
   @ApiOperation({ summary: '여행 루트 상세 조회' })
   @ApiBearerAuth('access-token')
   getRouteDetail(
@@ -51,7 +76,7 @@ export class TripRoutesController {
   }
 
   @UseGuards(JwtAccessGuard)
-  @Post('bookmark/add/:slug')
+  @Put('bookmark/add/:slug')
   @ApiOperation({ summary: '여행 루트 북마크 추가' })
   @ApiBearerAuth('access-token')
   addBookmark(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
@@ -59,7 +84,7 @@ export class TripRoutesController {
   }
 
   @UseGuards(JwtAccessGuard)
-  @Post('bookmark/remove/:slug')
+  @Delete('bookmark/remove/:slug')
   @ApiOperation({ summary: '여행 루트 북마크 삭제' })
   @ApiBearerAuth('access-token')
   removeBookmark(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
@@ -70,8 +95,8 @@ export class TripRoutesController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('access-token')
   @Post()
-  @ApiOperation({ summary: '여행 루트 일괄 생성' })
-  createMany(@Body() body: CreateTripRouteDto[]) {
-    return this.tripRoutesService.createMany(body);
+  @ApiOperation({ summary: '여행 루트 생성' })
+  create(@Body() body: CreateTripRouteDto) {
+    return this.tripRoutesService.createOne(body);
   }
 }

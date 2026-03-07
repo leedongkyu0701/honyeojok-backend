@@ -1,26 +1,31 @@
-// src/destinations/destinations.service.ts
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { In, Repository, ILike } from 'typeorm';
+
 import { Destination } from './destination.entity';
+import { Tag } from 'src/tags/tag.entity';
+
 import { CreateDestinationDto } from './dtos/create-destination.dto';
-import { DestinationMapResponse } from './dtos/destination-map.response';
-import { DestinationCardResponse } from './dtos/destination-card.response';
-import { DestinationByRegionResponse } from './dtos/destination-region.response';
 import { FindDestinationsQuery } from './dtos/find-destinations.query';
+
+import { DestinationCardResponse } from './dtos/destination-card.response';
+import { DestinationMapResponse } from './dtos/destination-map.response';
+import { DestinationDetailResponse } from './dtos/destination-detail.response';
+
 import { TripRoute } from 'src/trip-routes/trip-route.entity';
 import { Spot } from 'src/spots/spot.entity';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import { SpotCategory } from 'src/types/spot';
 
 @Injectable()
 export class DestinationsService {
   constructor(
     @InjectRepository(Destination)
-    private repo: Repository<Destination>,
+    private readonly repo: Repository<Destination>,
     @InjectRepository(TripRoute)
-    private tripRouteRepo: Repository<TripRoute>,
+    private readonly tripRouteRepo: Repository<TripRoute>,
     @InjectRepository(Spot)
-    private spotRepo: Repository<Spot>,
+    private readonly spotRepo: Repository<Spot>,
   ) {}
 
   async findByQuery(
@@ -38,58 +43,98 @@ export class DestinationsService {
         province: query.province,
       });
     }
-    if (query.q) {
-      const keyword = query.q.trim();
-      qb.andWhere('destination.name ILIKE :name', { name: `%${keyword}%` });
-    }
-    if (sort === 'score' || sort === 'reviewCount') {
-      qb.orderBy(`destination.${sort}`, 'DESC').addOrderBy(
+
+    // 정렬 규칙: rank는 ASC, score는 DESC
+    if (sort === 'score') {
+      qb.orderBy('destination.score', 'DESC').addOrderBy(
         'destination.id',
-        'ASC',
+        'DESC',
       );
-    } else if (sort === 'rank') {
-      qb.orderBy(`destination.${sort}`, 'ASC');
+    } else {
+      qb.orderBy('destination.rank', 'ASC').addOrderBy(
+        'destination.id',
+        'DESC',
+      );
     }
+
     qb.skip(skip).take(take);
 
-    const [destinations, total] = await qb.getManyAndCount();
+    const [rows, total] = await qb.getManyAndCount();
     const totalPages = Math.ceil(total / take);
 
-    const data = destinations.map((dest) => ({
-      id: dest.id,
-      slug: dest.slug,
-      name: dest.name,
-      score: dest.score,
-      imageUrl: dest.imageUrl,
-      province: dest.province,
-      summary: dest.summary,
-    }));
-
-    return { data, totalPages };
+    return {
+      totalPages,
+      data: rows.map((d) => ({
+        id: d.id,
+        slug: d.slug,
+        name: d.name,
+        score: d.score,
+        summary: d.summary,
+        imageUrl: d.imageUrl ?? null,
+      })),
+    };
   }
 
-  async search(query: string) {
-    const keyword = (query ?? '').trim();
-    if (keyword.length === 0) {
-      return [];
+  async findWeekly(): Promise<DestinationCardResponse> {
+    const d = await this.repo.findOne({ where: { rank: 1 } });
+    if (!d) {
+      throw BaseException.notFound(
+        'Weekly destination not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+      );
     }
-    const destinations = await this.repo.find({
-      where: { name: ILike(`%${keyword}%`) },
-      take: 5,
+    return {
+      id: d.id,
+      slug: d.slug,
+      name: d.name,
+      score: d.score,
+      summary: d.summary,
+      imageUrl: d.imageUrl ?? null,
+    };
+  }
+
+  async findRecommended(take = 6): Promise<DestinationCardResponse[]> {
+    const rows = await this.repo.find({ order: { score: 'DESC' }, take });
+    return rows.map((d) => ({
+      id: d.id,
+      slug: d.slug,
+      name: d.name,
+      score: d.score,
+      summary: d.summary,
+      imageUrl: d.imageUrl ?? null,
+    }));
+  }
+
+  async findMap(): Promise<DestinationMapResponse[]> {
+    const rows = await this.repo.find({
+      select: [
+        'id',
+        'slug',
+        'name',
+        'latitude',
+        'longitude',
+        'score',
+        'summary',
+      ],
+      relations: ['tags'],
     });
-    if (destinations.length === 0) {
-      return [];
-    }
-    return destinations.map((dest) => ({
-      id: dest.id,
-      slug: dest.slug,
-      name: dest.name,
+
+    return rows.map((d) => ({
+      id: d.id,
+      slug: d.slug,
+      name: d.name,
+      score: d.score,
+      summary: d.summary,
+      latitude: d.latitude,
+      longitude: d.longitude,
+      tagSlugs: d.tags?.map((t) => t.slug) ?? [],
     }));
   }
 
-  async findByRegion(region: string): Promise<DestinationByRegionResponse> {
+  async findByRegion(region: string): Promise<DestinationDetailResponse> {
     const destination = await this.repo.findOne({
       where: { slug: region },
+      relations: ['tags'],
     });
 
     if (!destination) {
@@ -100,13 +145,13 @@ export class DestinationsService {
     }
 
     const tripRoutes = await this.tripRouteRepo.find({
-      where: { destination: { id: destination.id } },
-      order: { bookmarkCount: 'DESC' },
+      where: { destinationId: destination.id },
+      order: { bookmarkCount: 'DESC', id: 'DESC' },
       take: 3,
     });
 
     const spots = await this.spotRepo.find({
-      where: { destination: { id: destination.id }, isRecommended: true },
+      where: { destinationId: destination.id, isRecommended: true },
       relations: ['tags'],
       order: { id: 'DESC' },
       take: 5,
@@ -116,91 +161,122 @@ export class DestinationsService {
       id: destination.id,
       slug: destination.slug,
       name: destination.name,
-      score: destination.score,
-      imageUrl: destination.imageUrl,
-      imageSource: destination.imageSource,
-      imageCredit: destination.imageCredit,
       province: destination.province,
+      score: destination.score,
+
+      imageUrl: destination.imageUrl ?? null,
+      imageSource: destination.imageSource ?? null,
+      imageCredit: destination.imageCredit ?? null,
+
+      summary: destination.summary,
+      description: destination.description,
+
       difficulty: {
         food: destination.food,
         transport: destination.transport,
         safety: destination.safety,
         loneliness: destination.loneliness,
       },
-      summary: destination.summary,
+
+      tags:
+        destination.tags?.map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          label: t.label,
+        })) ?? [],
+
       routes: tripRoutes.map((route) => ({
         id: route.id,
         slug: route.slug,
         title: route.title,
         summary: route.summary,
         days: route.days,
-        region: route.region,
+        regionSlug: destination.slug,
         bookmarkCount: route.bookmarkCount,
       })),
+
       spots: spots.map((spot) => ({
         id: spot.id,
         slug: spot.slug,
         name: spot.name,
-        note: spot.note ?? null,
-        description: spot.description,
+        summary: spot.summary,
+        lat: spot.lat ?? null,
+        lng: spot.lng ?? null,
+        category: spot.category ?? SpotCategory.ETC,
         imageUrl: spot.imageUrl ?? null,
+        tags: (spot.tags ?? []).map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          label: t.label,
+        })),
         destination: {
           id: destination.id,
           slug: destination.slug,
           name: destination.name,
         },
-        tags: spot.tags.map((tag) => ({ slug: tag.slug, label: tag.label })),
       })),
     };
   }
 
-  async findRecommanded(): Promise<DestinationCardResponse[]> {
-    const recommendedDestinations = await this.repo.find({
-      order: { score: 'DESC' },
-      take: 6,
-    });
-
-    return recommendedDestinations.map((dest) => ({
-      id: dest.id,
-      slug: dest.slug,
-      name: dest.name,
-      score: dest.score,
-      imageUrl: dest.imageUrl,
-      province: dest.province,
-      summary: dest.summary,
-    }));
-  }
-
-  async findWeekly(): Promise<DestinationCardResponse> {
-    const weeklyDestination = await this.repo.findOne({
-      where: { rank: 1 },
-    });
-    if (!weeklyDestination) {
-      throw BaseException.notFound(
-        'Weekly destination not found',
-        ErrorCode.RESOURCE_NOT_FOUND,
-      );
+  async search(query: string) {
+    const keyword = (query ?? '').trim();
+    if (keyword.length === 0) {
+      return [];
     }
-    return {
-      id: weeklyDestination.id,
-      slug: weeklyDestination.slug,
-      name: weeklyDestination.name,
-      score: weeklyDestination.score,
-      imageUrl: weeklyDestination.imageUrl,
-      province: weeklyDestination.province,
-      summary: weeklyDestination.summary,
-    };
-  }
-
-  async findMap(): Promise<DestinationMapResponse[]> {
     const destinations = await this.repo.find({
-      select: ['id', 'slug', 'name', 'latitude', 'longitude', 'score'],
+      select: ['id', 'slug', 'name'],
+      where: { name: ILike(`%${keyword}%`) },
+      order: { name: 'ASC' },
+      take: 5,
     });
+    if (destinations.length === 0) {
+      return [];
+    }
     return destinations;
   }
 
-  createMany(data: CreateDestinationDto[]) {
-    const destinations = this.repo.create(data);
-    return this.repo.save(destinations);
+  async createOne(dto: CreateDestinationDto): Promise<Destination> {
+    return this.repo.manager.transaction(async (m) => {
+      const destinationRepo = m.getRepository(Destination);
+      const tagRepo = m.getRepository(Tag);
+
+      const destination = destinationRepo.create({
+        slug: dto.slug,
+        name: dto.name,
+        province: dto.province,
+        score: dto.score,
+        rank: dto.rank,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        imageUrl: dto.imageUrl,
+        imageSource: dto.imageSource,
+        imageCredit: dto.imageCredit,
+        summary: dto.summary,
+        description: dto.description,
+        food: dto.food,
+        transport: dto.transport,
+        safety: dto.safety,
+        loneliness: dto.loneliness,
+      });
+
+      // tagSlugs가 있으면 연결
+      if (dto.tagSlugs?.length) {
+        const tags = await tagRepo.find({ where: { slug: In(dto.tagSlugs) } });
+
+        if (tags.length !== dto.tagSlugs.length) {
+          const found = new Set(tags.map((t) => t.slug));
+          const missing = dto.tagSlugs.filter((s) => !found.has(s));
+          throw new BadRequestException(
+            `Invalid tag slugs: ${missing.join(', ')}`,
+          );
+        }
+
+        destination.tags = tags;
+      } else {
+        destination.tags = [];
+      }
+
+      return destinationRepo.save(destination);
+    });
   }
 }

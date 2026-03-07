@@ -1,30 +1,39 @@
-import { TripRouteItemType } from 'src/types/trip-route';
 import type { TagResponse } from 'src/types/tag';
 
 export class TripRouteItemResponse {
   id: number;
-  type: TripRouteItemType;
+
   order: number;
   recommendedLevel: number;
 
   title: string;
-  description?: string;
+  description: string;
 
-  lat?: number;
-  lng?: number;
-  address?: string;
+  imageUrl: string | null;
+  imageCredit: string | null;
 
-  startTime?: string;
-  endTime?: string;
+  lat: number | null;
+  lng: number | null;
 
-  externalUrl?: string;
+  address: string | null;
+
+  startTime: string | null;
+  endTime: string | null;
+
+  externalUrl: string | null;
+
+  // ✅ spot 연결된 경우에만 내려줌 (프론트에서 spot 상세로 이동)
+  spot?: {
+    id: number;
+    slug: string;
+  };
 }
 
 export class TripRouteDayResponse {
   id: number;
   dayNumber: number;
-  title?: string;
-  note?: string;
+  title: string;
+  note: string;
 
   items: TripRouteItemResponse[];
 }
@@ -32,11 +41,12 @@ export class TripRouteDayResponse {
 export class TripRouteDetailResponse {
   id: number;
   slug: string;
-  region: string;
 
   title: string;
   summary: string;
   days: number;
+  honyeoTip: string | null;
+  honyeoCost: number | null;
 
   bookmarkCount: number;
   bookmarkedByMe: boolean;

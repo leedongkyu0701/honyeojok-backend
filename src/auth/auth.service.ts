@@ -39,11 +39,20 @@ export class AuthService {
     );
 
     if (!user) {
-      const nickName = await this.generateUniqueNickName();
+      const deletedUser = await this.userService.findDeletedByProvider(
+        dto.provider,
+        dto.providerId,
+      );
+      if (deletedUser) {
+        throw BaseException.forbidden(
+          'This account has been withdrawn',
+          ErrorCode.AUTH_WITHDRAWN_USER,
+        );
+      }
 
-      // 여기서 DB 유니크 충돌이 나면 전역필터가 409(DUPLICATE_RESOURCE)로 처리
+      const nickName = await this.generateUniqueNickName();
       user = await this.userService.createUser({
-        email: dto.email ?? null,
+        email: dto.email ?? undefined,
         nickName,
         provider: dto.provider,
         providerId: dto.providerId,
@@ -147,13 +156,12 @@ export class AuthService {
       );
     }
 
-    const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
-      code,
-    });
+    const params = new URLSearchParams();
+    params.append('grant_type', 'authorization_code');
+    params.append('client_id', CLIENT_ID);
+    params.append('client_secret', CLIENT_SECRET);
+    params.append('redirect_uri', REDIRECT_URI);
+    params.append('code', code);
 
     const response = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
@@ -323,8 +331,17 @@ export class AuthService {
   private async generateTokens(
     user: User,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const refreshPayload = { sub: user.id, role: user.role };
-    const accessPayload = { sub: user.id, email: user.email, role: user.role };
+    const refreshPayload = {
+      sub: user.id,
+      role: user.role,
+      provider: user.provider,
+    };
+    const accessPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      provider: user.provider,
+    };
 
     const accessToken = await this.jwtService.signAsync(accessPayload, {
       secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET_KEY'),
@@ -342,7 +359,7 @@ export class AuthService {
   private async updateRefreshToken(userId: number, refreshToken: string) {
     const hashedRefreshToken = await argon2.hash(refreshToken, {
       type: argon2.argon2id,
-      timeCost: 1, // ⬅ 기본값보다 낮춤
+      timeCost: 1,
       memoryCost: 2 ** 16,
       parallelism: 1,
     });
@@ -365,5 +382,9 @@ export class AuthService {
     }
 
     return `혼여족_${Date.now()}`;
+  }
+
+  async withdraw(userId: number): Promise<void> {
+    await this.userService.withdraw(userId);
   }
 }

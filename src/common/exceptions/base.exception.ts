@@ -1,4 +1,3 @@
-// src/common/exceptions/base.exception.ts
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 export enum ErrorCode {
@@ -20,6 +19,7 @@ export enum ErrorCode {
   AUTH_TOKEN_EXPIRED = 'AUTH_TOKEN_EXPIRED',
   AUTH_INVALID_TOKEN = 'AUTH_INVALID_TOKEN',
   AUTH_REFRESH_INVALID = 'AUTH_REFRESH_INVALID',
+  AUTH_WITHDRAWN_USER = 'AUTH_WITHDRAWN_USER',
 
   /**
    * OAuth (Social)
@@ -45,10 +45,11 @@ export type ErrorResponseBody = {
   ok: false;
   code: ErrorCode;
   message: string;
-  details?: unknown; // ⚠️ 토큰/비번/개인정보 금지
+  details?: unknown; // 토큰/비번/개인정보 금지
 };
 
 export class BaseException extends HttpException {
+  public readonly code: ErrorCode;
   constructor(
     message: string,
     code: ErrorCode,
@@ -59,6 +60,7 @@ export class BaseException extends HttpException {
       { ok: false, message, code, details } satisfies ErrorResponseBody,
       status,
     );
+    this.code = code;
   }
 
   // ---- Optional helpers ----

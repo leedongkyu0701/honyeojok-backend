@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Post, UseGuards } from '@nestjs/common';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dtos/tag.dto';
 import { TagResponse } from './dtos/tag.response';
@@ -13,24 +13,19 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 @Controller('tags')
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
-  @Get()
-  @ApiOperation({ summary: '태그 목록 조회' })
-  async findAll(): Promise<TagResponse[]> {
-    return this.tagsService.findAll();
-  }
 
   @UseGuards(JwtAccessGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
   @Post()
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: '태그 일괄 생성' })
-  async createMany(@Body() dto: CreateTagDto[]): Promise<TagResponse[]> {
-    return this.tagsService.createMany(dto);
+  @ApiOperation({ summary: '태그 생성' })
+  create(@Body() dto: CreateTagDto): Promise<TagResponse> {
+    return this.tagsService.createOne(dto);
   }
 
   @UseGuards(JwtAccessGuard, RoleGuard)
   @Roles(UserRole.ADMIN)
-  @Delete(':slug')
+  @Delete()
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: '태그 삭제' })
   async remove(@Body('slug') slug: string): Promise<{ ok: true }> {

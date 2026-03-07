@@ -7,11 +7,12 @@ import {
   Index,
   OneToMany,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Post } from './post.entity';
 
-@Index(['postId', 'createdAt'])
+@Index('IDX_comments_post_id_created_at', ['postId', 'createdAt'])
 @Entity('comments')
 export class Comment {
   @PrimaryGeneratedColumn()
@@ -23,18 +24,16 @@ export class Comment {
   @Column({ type: 'boolean', default: false })
   isDeleted: boolean;
 
-  @Index()
   @Column()
   userId: number;
 
   @Column()
   postId: number;
 
-  @Index()
   @Column({ type: 'int', nullable: true })
   parentId: number | null;
 
-  @ManyToOne(() => User, (user) => user.comments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.comments)
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -51,4 +50,7 @@ export class Comment {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

@@ -14,15 +14,17 @@ import { PostCardResponse } from './dtos/post-card.response';
 import { PostDetailResponse } from './dtos/post-detail.response';
 import { PostLike } from './post_like.entity';
 import { ConfigService } from '@nestjs/config';
-
+import { FindPostsQuery } from './dtos/find-posts.dto';
 import { R2Service } from 'src/common/r2/r2.service';
 import { randomUUID } from 'crypto';
 import { processImageBuffer } from 'src/common/process-image';
 import { CommentResponseDto } from './dtos/comment.response';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class PostService {
+  private readonly logger = new Logger(PostService.name);
   constructor(
     @InjectRepository(Post)
     private readonly postRepo: Repository<Post>,
@@ -30,10 +32,10 @@ export class PostService {
     private readonly commentRepo: Repository<Comment>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly dataSource: DataSource,
-    private readonly r2Service: R2Service,
     @InjectRepository(PostLike)
     private readonly postLikeRepo: Repository<PostLike>,
+    private readonly dataSource: DataSource,
+    private readonly r2Service: R2Service,
     private readonly configService: ConfigService,
   ) {}
 
@@ -42,7 +44,7 @@ export class PostService {
     createPostDto: CreatePostDto,
     images?: Express.Multer.File[],
   ): Promise<PostCardResponse> {
-    const uploadedKeys: string[] = []; // 업로드된 이미지 키를 추적하기 위한 배열(나중에 삭제할 때 사용)
+    const uploadedKeys: string[] = []; // 업로드된 이미지 키 추적 배열 (r2 롤백용)
 
     if (this.configService.getOrThrow('IMAGE_UPLOAD_ENABLED') !== 'true') {
       throw BaseException.serviceUnavailable('Image uploads are disabled');
@@ -59,10 +61,12 @@ export class PostService {
             ErrorCode.RESOURCE_NOT_FOUND,
           );
         }
-
         let destination: Destination | undefined;
 
-        if (createPostDto.type === PostType.REVIEW) {
+        if (
+          createPostDto.type === PostType.REVIEW &&
+          createPostDto.regionSlug
+        ) {
           const find = await manager.findOne(Destination, {
             where: { slug: createPostDto.regionSlug },
           });
@@ -79,15 +83,15 @@ export class PostService {
           title: createPostDto.title,
           content: createPostDto.content,
           rating: createPostDto.rating,
-          destination,
+          destination: destination,
           type: createPostDto.type,
           region: createPostDto.regionSlug,
           user,
           likeCount: 0,
+          viewCount: 0,
         });
         await manager.save(post);
 
-        // 이미지가 있다면 R2에 업로드 및 PostImage 엔티티 생성
         if (images && images.length > 0) {
           const postImages: PostImage[] = [];
 
@@ -99,8 +103,17 @@ export class PostService {
           }
 
           let thumbnailUrl: string | null = null;
+          const captions = createPostDto.captions || [];
 
-          for (const image of images) {
+          if (captions.length > images.length) {
+            throw BaseException.badRequest(
+              'Captions count cannot exceed images count',
+              ErrorCode.VALIDATION_FAILED,
+            );
+          }
+
+          for (let i = 0; i < images.length; i++) {
+            const image = images[i];
             const uniqueKey = `posts/${post.id}/${randomUUID()}.webp`;
             const buffer = await processImageBuffer(image.buffer, 'REVIEW');
             const imageUrl = await this.r2Service.uploadImage(
@@ -108,15 +121,17 @@ export class PostService {
               buffer,
             );
 
-            uploadedKeys.push(uniqueKey); // 업로드된 이미지 키 저장
+            uploadedKeys.push(uniqueKey);
 
-            if (!thumbnailUrl) {
-              thumbnailUrl = imageUrl; // 첫 번째 이미지를 썸네일로 설정
+            if (i === 0) {
+              thumbnailUrl = imageUrl;
             }
 
             const postImage = manager.create(PostImage, {
-              url: imageUrl,
+              imageUrl: imageUrl,
               post,
+              caption: captions[i]?.trim(),
+              imgOrder: i,
             });
             postImages.push(postImage);
           }
@@ -133,9 +148,10 @@ export class PostService {
           title: post.title,
           region: post.region,
           createdAt: post.createdAt,
-          nickName: post.user.nickName,
+          nickName: post.user.nickName ?? '탈퇴한 혼여족',
           type: post.type,
           likeCount: post.likeCount,
+          viewCount: post.viewCount,
           thumbnailUrl: post.thumbnailUrl,
         };
       });
@@ -164,10 +180,11 @@ export class PostService {
     post.isDeleted = true;
     await this.postRepo.save(post);
 
-    // 1️⃣ R2 이미지 삭제
     await Promise.allSettled(
       post.images.map((img) =>
-        this.r2Service.deleteImage(this.r2Service.extractKeyFromUrl(img.url)),
+        this.r2Service.deleteImage(
+          this.r2Service.extractKeyFromUrl(img.imageUrl),
+        ),
       ),
     );
   }
@@ -178,24 +195,27 @@ export class PostService {
         try {
           await this.r2Service.deleteImage(key);
         } catch (err) {
-          console.error(`Failed to delete image with key ${key}:`, err);
+          this.logger.warn(
+            `rollbackImages failed : could not delete image with key ${key}`,
+            err,
+          );
         }
       }),
     );
   }
 
   async findPosts(
-    page: number,
-    type?: PostType,
-    searchTerm?: string,
+    query: FindPostsQuery,
   ): Promise<{ posts: PostCardResponse[]; totalPages: number }> {
-    const take = 10;
+    const page = Math.max(1, query.page ?? 1);
+    const take = Math.min(10, Math.max(1, query.take ?? 10));
     const skip = (page - 1) * take;
+    const { type, q: searchTerm, province } = query;
 
     const queryBuilder = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
-      .leftJoinAndSelect('post.images', 'images')
+      .leftJoinAndSelect('post.destination', 'destination')
       .where('post.isDeleted = :isDeleted', { isDeleted: false })
       .orderBy('post.createdAt', 'DESC')
       .take(take)
@@ -211,16 +231,22 @@ export class PostService {
       });
     }
 
+    if (province && type === PostType.REVIEW) {
+      queryBuilder.andWhere('destination.province = :province', { province });
+    }
+
     const [posts, total] = await queryBuilder.getManyAndCount();
 
     const data = posts.map((post) => ({
       id: post.id,
       title: post.title,
       region: post.region,
+      regionName: post.destination?.name ?? undefined,
       type: post.type,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
     }));
     return { posts: data, totalPages: Math.ceil(total / take) };
@@ -229,8 +255,8 @@ export class PostService {
   async findPostsByRegionSlug(regionSlug: string): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
       where: { region: regionSlug, isDeleted: false },
-      relations: ['user', 'images'],
-      order: { createdAt: 'DESC' },
+      relations: ['user', 'destination'],
+      order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
     });
 
@@ -238,10 +264,12 @@ export class PostService {
       id: post.id,
       title: post.title,
       region: post.region,
+      regionName: post.destination?.name ?? undefined,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
       type: post.type,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
     }));
     return data;
@@ -249,11 +277,11 @@ export class PostService {
 
   async findPostById(
     postId: number,
-    userId: number,
+    userId?: number,
   ): Promise<PostDetailResponse> {
     const post = await this.postRepo.findOne({
       where: { id: postId, isDeleted: false },
-      relations: ['user', 'images'],
+      relations: ['user', 'images', 'destination'],
     });
 
     if (!post) {
@@ -263,36 +291,48 @@ export class PostService {
       );
     }
 
-    let likedByMe = false;
-    const existingLike = await this.postLikeRepo.findOne({
-      where: { post: { id: postId }, user: { id: userId } },
-      relations: ['post', 'user'],
-    });
-
-    if (existingLike) {
-      likedByMe = true;
-    }
+    const likedByMe = userId
+      ? await this.postLikeRepo.exists({
+          where: { postId, userId },
+        })
+      : false;
 
     return {
       id: post.id,
       title: post.title,
       region: post.region,
+      regionName: post.destination?.name ?? undefined,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       content: post.content,
       type: post.type,
       rating: post.rating,
       likeCount: post.likeCount,
       likedByMe,
-      imageUrls: post.images?.map((image) => image.url),
+      images:
+        post.images
+          ?.sort((a, b) => a.imgOrder - b.imgOrder)
+          .map((img) => ({
+            url: img.imageUrl,
+            caption: img.caption ?? null,
+          })) ?? [],
+      viewCount: post.viewCount,
     };
+  }
+
+  async incrementViewCount(postId: number): Promise<void> {
+    await this.postRepo.increment(
+      { id: postId, isDeleted: false },
+      'viewCount',
+      1,
+    );
   }
 
   async findBestPosts(): Promise<PostCardResponse[]> {
     const posts = await this.postRepo.find({
-      relations: ['user', 'images'],
+      relations: ['user', 'destination'],
       where: { isDeleted: false },
-      order: { likeCount: 'DESC' },
+      order: { likeCount: 'DESC', viewCount: 'DESC' },
       take: 3,
     });
     return posts.map((post) => ({
@@ -301,9 +341,11 @@ export class PostService {
       region: post.region,
       type: post.type,
       createdAt: post.createdAt,
-      nickName: post.user.nickName,
+      nickName: post.user.nickName ?? '탈퇴한 혼여족',
       likeCount: post.likeCount,
+      viewCount: post.viewCount,
       thumbnailUrl: post.thumbnailUrl,
+      regionName: post.destination?.name ?? undefined,
     }));
   }
 
@@ -342,7 +384,7 @@ export class PostService {
 
     if (parentId !== null) {
       const parent = await this.commentRepo.findOne({
-        where: { id: parentId, postId },
+        where: { id: parentId, postId }, // 부모 댓글이 같은 게시글에 속하는지 확인
         select: ['id', 'postId', 'parentId', 'isDeleted'],
       });
 
@@ -387,11 +429,11 @@ export class PostService {
         ErrorCode.RESOURCE_NOT_FOUND,
       );
     }
-    // 1) 해당 post의 댓글 전부 가져오기 (user join은 닉네임 필요할 때만)
+    // 1) 해당 post의 댓글 전부 가져오기
     const rows = await this.commentRepo.find({
       where: { postId },
       order: { createdAt: 'ASC' },
-      relations: { user: true }, // 닉네임 보여주려면 필요
+      relations: { user: true },
       select: {
         id: true,
         content: true,
@@ -413,10 +455,10 @@ export class PostService {
         createdAt: c.createdAt,
         parentId: c.parentId ?? null,
         postId: postId,
-        userId: c.userId,
+        userId: c.userId ?? null,
         user: {
           id: c.user?.id ?? c.userId,
-          nickName: c.user?.nickName ?? 'unknown',
+          nickName: c.user?.nickName ?? '탈퇴한 혼여족',
         },
         children: [],
       });
@@ -484,14 +526,12 @@ export class PostService {
         );
       }
 
-      const existingLike = await manager.findOne(PostLike, {
-        where: { post: { id: postId }, user: { id: userId } },
-        relations: ['post', 'user'],
+      const existingLike = await manager.exists(PostLike, {
+        where: { postId, userId },
       });
 
       if (existingLike) {
-        // 이미 좋아요가 눌러져 있으면 좋아요 취소
-        await manager.remove(existingLike);
+        await manager.delete(PostLike, { postId, userId });
         await manager.decrement(Post, { id: postId }, 'likeCount', 1);
         const updatedPost = await manager.findOne(Post, {
           where: { id: postId, isDeleted: false },

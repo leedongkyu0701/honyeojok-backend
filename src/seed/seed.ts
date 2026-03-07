@@ -1,5 +1,4 @@
-// src/seed/seed.ts
-import { AppDataSource } from '../data-source'; // 네 data-source.ts 경로 맞춰
+import { AppDataSource } from '../data-source';
 import { runSeed } from './seed-runner';
 console.log('🚀 Starting seed...');
 

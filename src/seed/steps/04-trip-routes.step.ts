@@ -1,12 +1,14 @@
 import type { EntityManager } from 'typeorm';
 import { In } from 'typeorm';
-import { tripRoutes } from '../data/trip-routes';
+
+import { tripRoutes } from '../data/trip-routes/index';
 
 import { TripRoute } from '../../trip-routes/trip-route.entity';
 import { TripRouteDay } from '../../trip-routes/trip-routes-day.entity';
 import { TripRouteItem } from '../../trip-routes/trip-route-item.entity';
 import { Destination } from '../../destinations/destination.entity';
 import { Tag } from '../../tags/tag.entity';
+import { Spot } from '../../spots/spot.entity';
 
 export async function seedTripRoutes(m: EntityManager) {
   const routeRepo = m.getRepository(TripRoute);
@@ -14,101 +16,164 @@ export async function seedTripRoutes(m: EntityManager) {
   const itemRepo = m.getRepository(TripRouteItem);
   const destRepo = m.getRepository(Destination);
   const tagRepo = m.getRepository(Tag);
+  const spotRepo = m.getRepository(Spot);
 
-  const dests = await destRepo.find({ select: ['id', 'slug'] });
-  const destBySlug = new Map(dests.map((d) => [d.slug, d.id]));
+  // 1) Destination slug -> id (필요한 slug만)
+  const destSlugs = Array.from(
+    new Set(tripRoutes.map((r) => r.destinationSlug)),
+  );
+  const dests = await destRepo.find({
+    where: { slug: In(destSlugs) },
+    select: ['id', 'slug'],
+  });
+  const destIdBySlug = new Map(dests.map((d) => [d.slug, d.id]));
+  const missingDest = destSlugs.filter((s) => !destIdBySlug.has(s));
+  if (missingDest.length) {
+    throw new Error(
+      `seedTripRoutes: Destination not found: ${missingDest.join(', ')}`,
+    );
+  }
 
-  const allTags = await tagRepo.find({ select: ['id', 'slug', 'label'] });
-  const tagBySlug = new Map(allTags.map((t) => [t.slug, t]));
+  // 2) Tag slug -> Tag (seed에서 쓰는 slug만)
+  const allTagSlugs = Array.from(
+    new Set(tripRoutes.flatMap((r) => r.tagSlugs ?? [])),
+  );
+  const tags =
+    allTagSlugs.length === 0
+      ? []
+      : await tagRepo.find({
+          where: { slug: In(allTagSlugs) },
+          select: ['id', 'slug', 'label'],
+        });
+  const tagBySlug = new Map(tags.map((t) => [t.slug, t]));
+  const missingTags = allTagSlugs.filter((s) => !tagBySlug.has(s));
+  if (missingTags.length) {
+    throw new Error(
+      `seedTripRoutes: Missing tags (did you run seedTags first?): ${missingTags.join(', ')}`,
+    );
+  }
+
+  // 3) Spot slug -> id (TripRouteItem.spotSlug용)
+  const allSpotSlugs = Array.from(
+    new Set(
+      tripRoutes.flatMap((r) =>
+        r.daysPlan.flatMap((d) => d.items.flatMap((i) => i.spotSlug ?? [])),
+      ),
+    ),
+  );
+  const spots =
+    allSpotSlugs.length === 0
+      ? []
+      : await spotRepo.find({
+          where: { slug: In(allSpotSlugs) },
+          select: [
+            'id',
+            'slug',
+            'summary',
+            'address',
+            'imageUrl',
+            'imageCredit',
+            'lat',
+            'lng',
+            'externalUrl',
+          ],
+        });
+  const spotBySlug = new Map(spots.map((s) => [s.slug, s]));
+  const missingSpots = allSpotSlugs.filter((s) => !spotBySlug.has(s));
+  if (missingSpots.length) {
+    throw new Error(
+      `seedTripRoutes: Spot not found (did you run seedSpots first?): ${missingSpots.join(', ')}`,
+    );
+  }
 
   for (const r of tripRoutes) {
-    // ✅ FK는 destinationSlug 기준이 안전 (region은 표시용일 수 있음)
-    const destinationId = destBySlug.get(r.destinationSlug);
-    if (!destinationId) {
-      throw new Error(`Destination not found: ${r.destinationSlug}`);
-    }
+    const destinationId = destIdBySlug.get(r.destinationSlug)!;
+    const routeTags = (r.tagSlugs ?? []).map((slug) => tagBySlug.get(slug)!);
 
-    const tagEntities = (r.tagSlugs ?? [])
-      .map((slug) => tagBySlug.get(slug))
-      .filter(Boolean) as Tag[];
-
-    // 1) Route: slug 기준 idempotent 갱신
+    // 1) Route: slug unique 기반 idempotent
     const existingRoute = await routeRepo.findOne({
       where: { slug: r.slug },
       relations: ['tags'],
     });
-
-    let route = existingRoute ?? routeRepo.create();
+    const route = existingRoute ?? routeRepo.create();
 
     route.slug = r.slug;
-    route.region = r.region;
     route.title = r.title;
     route.summary = r.summary;
     route.days = r.days;
-
-    // ✅ 추가된 필드 반영
-    route.bookmarkCount = r.bookmarkCount ?? 0;
-
-    // ✅ FK
+    route.honyeoCost = r.honyeoCost;
+    route.honyeoTip = r.honyeoTip;
+    route.bookmarkCount = route.bookmarkCount ?? r.bookmarkCount ?? 0; // 기존 bookmarkCount 유지 (seed에 없는 경우 0으로 초기화)
     route.destinationId = destinationId;
+    route.tags = routeTags;
 
-    // ✅ ManyToMany
-    route.tags = tagEntities;
+    const savedRoute = await routeRepo.save(route);
 
-    route = await routeRepo.save(route);
-
-    // 2) day/item: 고정 시드면 "삭제 후 재삽입" 방식이 예측 가능
+    // 2) Day/Item: 삭제 후 재삽입(가장 예측 가능)
+    //    - items -> days 순서로 삭제해야 FK 제약 안 걸림
     const existingDays = await dayRepo.find({
-      where: { tripRoute: { id: route.id } },
+      where: { tripRouteId: savedRoute.id },
       select: ['id'],
     });
 
     if (existingDays.length > 0) {
       const dayIds = existingDays.map((d) => d.id);
-
-      // ✅ day -> item FK delete
-      await itemRepo.delete({ day: { id: In(dayIds) } });
-
-      // ✅ route -> day delete
-      await dayRepo.delete({ tripRoute: { id: route.id } });
+      // itemRepo.delete에서 relation 조건 대신 dayId로 삭제
+      await itemRepo.delete({ dayId: In(dayIds) });
+      await dayRepo.delete({ tripRouteId: savedRoute.id });
     }
 
+    // 3) 새로 삽입
     for (const d of r.daysPlan) {
-      // ✅ order 중복 방지
+      // order 중복 방지 (dayId+order unique)
       const orders = d.items.map((i) => i.order);
       if (orders.length !== new Set(orders).size) {
         throw new Error(
-          `Duplicate order: route=${route.slug}, day=${d.dayNumber}`,
+          `seedTripRoutes: Duplicate order. route=${r.slug}, day=${d.dayNumber}`,
         );
       }
 
       const day = dayRepo.create({
-        tripRoute: route,
+        tripRouteId: savedRoute.id,
         dayNumber: d.dayNumber,
-        title: d.title ?? undefined,
-        note: d.note ?? undefined,
+        title: d.title,
+        note: d.note,
       });
-      await dayRepo.save(day);
+      const savedDay = await dayRepo.save(day);
 
-      const items = d.items.map((i) =>
-        itemRepo.create({
-          day,
-          type: i.type,
+      const items = d.items.map((i) => {
+        const spot = i.spotSlug ? spotBySlug.get(i.spotSlug) : undefined;
+
+        // ✅ spotSlug가 있으면 spot에서 필드를 가져오고,
+        //    seed에 직접 description이 있는 경우(예: 혼밥/혼술 커스텀)는 seed 값을 우선 사용
+        const description = i.description ?? spot?.summary ?? '';
+        const address = i.address ?? spot?.address;
+        const imageUrl = i.imageUrl ?? spot?.imageUrl;
+        const imageCredit = i.imageCredit ?? spot?.imageCredit;
+        const lat = i.lat ?? spot?.lat;
+        const lng = i.lng ?? spot?.lng;
+        const externalUrl = i.externalUrl ?? spot?.externalUrl;
+
+        return itemRepo.create({
+          day: savedDay,
+
           order: i.order,
-          recommendedLevel: i.recommendedLevel,
+          recommendedLevel: i.recommendedLevel ?? 3,
           title: i.title,
 
-          // ✅ 추가 옵션들 전부 반영
-          description: i.description ?? undefined,
-          imageUrl: i.imageUrl ?? undefined,
-          lat: i.lat ?? undefined,
-          lng: i.lng ?? undefined,
-          address: i.address ?? undefined,
-          startTime: i.startTime ?? undefined,
-          endTime: i.endTime ?? undefined,
-          externalUrl: i.externalUrl ?? undefined,
-        }),
-      );
+          description,
+          address,
+
+          imageUrl,
+          imageCredit,
+          lat,
+          lng,
+          startTime: i.startTime,
+          endTime: i.endTime,
+          externalUrl,
+          spotId: spot ? spot.id : undefined,
+        });
+      });
 
       await itemRepo.save(items);
     }
