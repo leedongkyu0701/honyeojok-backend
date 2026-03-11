@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nestjs';
 import {
   ArgumentsHost,
   Catch,
@@ -12,6 +13,7 @@ import {
   type ErrorResponseBody,
 } from '../exceptions/base.exception';
 import { Logger } from '@nestjs/common';
+import { JwtUser } from 'src/types/user';
 
 type ApiErrorResponse = ErrorResponseBody & {
   requestId?: string;
@@ -67,6 +69,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // 1) DB 에러(선처리)
     // -----------------------
     if (exception instanceof QueryFailedError) {
+      Sentry.withScope((scope) => {
+        scope.setTag('type', 'db_error');
+        scope.setTag('path', path);
+        scope.setTag('method', req.method);
+
+        if (requestId) {
+          scope.setTag('requestId', requestId);
+        }
+
+        const user = req.user as JwtUser | undefined;
+        if (user) {
+          scope.setUser({
+            id: user.id,
+          });
+        }
+
+        scope.setContext('request', {
+          method: req.method,
+          url: req.originalUrl,
+          requestId,
+        });
+
+        Sentry.captureException(exception);
+      });
       // TypeORM 버전/드라이버에 따라 타입이 애매할 수 있어 최소만 사용
       const driverErr = exception.driverError as unknown as { code?: string };
       this.logger.error(
@@ -110,6 +136,32 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // -----------------------
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
+      if (statusCode >= 500) {
+        Sentry.withScope((scope) => {
+          scope.setTag('type', 'http_error');
+          scope.setTag('path', path);
+          scope.setTag('method', req.method);
+
+          if (requestId) {
+            scope.setTag('requestId', requestId);
+          }
+
+          const user = req.user as JwtUser | undefined;
+          if (user) {
+            scope.setUser({
+              id: user.id,
+            });
+          }
+
+          scope.setContext('request', {
+            method: req.method,
+            url: req.originalUrl,
+            requestId,
+          });
+
+          Sentry.captureException(exception);
+        });
+      }
       const response = exception.getResponse();
       const fallbackCode = getFallbackCode(statusCode);
 
@@ -153,6 +205,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // -----------------------
     // 3) Unknown error
     // -----------------------
+    Sentry.withScope((scope) => {
+      scope.setTag('type', 'unknown_error');
+      scope.setTag('path', path);
+      scope.setTag('method', req.method);
+
+      if (requestId) {
+        scope.setTag('requestId', requestId);
+      }
+
+      scope.setContext('request', {
+        method: req.method,
+        url: req.originalUrl,
+        requestId,
+      });
+
+      const user = req.user as JwtUser | undefined;
+      if (user) {
+        scope.setUser({
+          id: user.id,
+        });
+      }
+
+      Sentry.captureException(exception);
+    });
     const statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     const body: ApiErrorResponse = {
       ok: false,
