@@ -13,7 +13,6 @@ import { ThrottlerCustomGuard } from './common/guards/throttler.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
 import { DbShutdownService } from './common/db-shutdown.service';
-import { DebugModule } from './debug/debug.module';
 
 @Module({
   imports: [
@@ -70,7 +69,6 @@ import { DebugModule } from './debug/debug.module';
     PostModule,
     TagsModule,
     HealthModule,
-    DebugModule,
   ],
   providers: [
     {
