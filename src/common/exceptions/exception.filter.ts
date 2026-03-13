@@ -64,6 +64,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const path = req.originalUrl;
     const timestamp = new Date().toISOString();
     const requestId = req.requestId;
+    const user = req.user as JwtUser | undefined;
 
     // -----------------------
     // 1) DB 에러(선처리)
@@ -78,7 +79,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           scope.setTag('requestId', requestId);
         }
 
-        const user = req.user as JwtUser | undefined;
         if (user) {
           scope.setUser({
             id: user.id,
@@ -96,9 +96,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // TypeORM 버전/드라이버에 따라 타입이 애매할 수 있어 최소만 사용
       const driverErr = exception.driverError as unknown as { code?: string };
       this.logger.error(
-        `[DB] ${req.method} ${path} requestId=${requestId ?? '-'} ` +
-          `code=${driverErr?.code ?? '-'} ` +
-          `msg=${exception.message}`,
+        {
+          type: 'db_error',
+          method: req.method,
+          path,
+          requestId,
+          userId: user?.id,
+          dbCode: driverErr?.code,
+          err: exception,
+        },
+        'Database query failed',
       );
 
       // Postgres unique violation: 23505
@@ -127,7 +134,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         timestamp,
       };
 
-      if (!isProd) console.error(exception);
       return res.status(statusCode).json(body);
     }
 
@@ -136,6 +142,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // -----------------------
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
+
       if (statusCode >= 500) {
         Sentry.withScope((scope) => {
           scope.setTag('type', 'http_error');
@@ -146,7 +153,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             scope.setTag('requestId', requestId);
           }
 
-          const user = req.user as JwtUser | undefined;
           if (user) {
             scope.setUser({
               id: user.id,
@@ -161,6 +167,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
           Sentry.captureException(exception);
         });
+
+        this.logger.error(
+          {
+            type: 'http_error',
+            method: req.method,
+            path,
+            requestId,
+            userId: user?.id,
+            statusCode,
+            err: exception,
+          },
+          'Unhandled HTTP exception',
+        );
       }
       const response = exception.getResponse();
       const fallbackCode = getFallbackCode(statusCode);
@@ -197,7 +216,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
 
       if (isProd) delete body.details;
-      if (!isProd && statusCode >= 500) console.error(exception);
 
       return res.status(statusCode).json(body);
     }
@@ -220,7 +238,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         requestId,
       });
 
-      const user = req.user as JwtUser | undefined;
       if (user) {
         scope.setUser({
           id: user.id,
@@ -229,6 +246,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       Sentry.captureException(exception);
     });
+    this.logger.error(
+      {
+        type: 'unknown_error',
+        method: req.method,
+        path,
+        requestId,
+        userId: user?.id,
+        err: exception,
+      },
+      'Unexpected unhandled exception',
+    );
     const statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     const body: ApiErrorResponse = {
       ok: false,
@@ -239,7 +267,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp,
     };
 
-    if (!isProd) console.error(exception);
     return res.status(statusCode).json(body);
   }
 }

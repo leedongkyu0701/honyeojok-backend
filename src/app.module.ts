@@ -13,6 +13,9 @@ import { ThrottlerCustomGuard } from './common/guards/throttler.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
 import { DbShutdownService } from './common/db-shutdown.service';
+import { LoggerModule } from 'nestjs-pino';
+import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 
 @Module({
   imports: [
@@ -21,6 +24,53 @@ import { DbShutdownService } from './common/db-shutdown.service';
       envFilePath:
         process.env.NODE_ENV === 'production' ? undefined : '.env.development',
     }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.APP_ENV === 'production'
+            ? undefined
+            : {
+                target: 'pino-pretty',
+                options: {
+                  singleLine: true,
+                  translateTime: 'SYS:standard',
+                },
+              },
+        genReqId: (req: Request, res: Response) => {
+          const headerRequestId =
+            req.headers['x-request-id']?.toString() ||
+            req.headers['x-correlation-id']?.toString();
+
+          const id = headerRequestId || randomUUID();
+          req.requestId = id;
+          res.setHeader('x-request-id', id);
+          return id;
+        },
+
+        customLogLevel: (_req, res, err) => {
+          if (err || res.statusCode >= 500) return 'error';
+          if (res.statusCode >= 400) return 'warn';
+          return 'info';
+        },
+
+        autoLogging: {
+          ignore: (req: Request) => {
+            const ignoredPaths = ['/health', '/docs', '/favicon.ico'];
+            return ignoredPaths.includes(req.path);
+          },
+        },
+        redact: {
+          // log 필요없는 내용 너무 많으면 serialie로 제거 고려
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'res.headers[set-cookie]',
+          ],
+          censor: '[REDACTED]',
+        },
+      },
+    }),
+
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

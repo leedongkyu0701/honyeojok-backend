@@ -30,6 +30,12 @@ export class DestinationsController {
     return this.service.findByQuery(query);
   }
 
+  @Get('throwError')
+  @ApiOperation({ summary: '에러 발생 테스트' })
+  throwError() {
+    throw new Error('Test error');
+  }
+
   @Get('weekly')
   @ApiOperation({ summary: '주간 추천 여행지 조회' })
   @HttpCache({ maxAge: 300, sMaxAge: 3600, swr: 300 })
