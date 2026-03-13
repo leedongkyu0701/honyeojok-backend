@@ -60,7 +60,7 @@ import { randomUUID } from 'crypto';
           },
         },
         redact: {
-          // log 필요없는 내용 너무 많으면 serialie로 제거 고려
+          // serialize 해서 필요 없지만 일단 놔둠.
           paths: [
             'req.headers.authorization',
             'req.headers.cookie',
@@ -76,7 +76,6 @@ import { randomUUID } from 'crypto';
                     id: req.id,
                     method: req.method,
                     url: req.url,
-                    ip: req.ip ?? 'disabled',
                   };
                 },
                 res(res: Response) {
