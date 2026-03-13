@@ -68,6 +68,24 @@ import { randomUUID } from 'crypto';
           ],
           censor: '[REDACTED]',
         },
+        serializers:
+          process.env.NODE_ENV === 'production'
+            ? {
+                req(req: Request) {
+                  return {
+                    id: req.id,
+                    method: req.method,
+                    url: req.url,
+                    ip: req.ip,
+                  };
+                },
+                res(res: Response) {
+                  return {
+                    statusCode: res.statusCode,
+                  };
+                },
+              }
+            : undefined,
       },
     }),
 
