@@ -76,6 +76,7 @@ import { randomUUID } from 'crypto';
                     id: req.id,
                     method: req.method,
                     url: req.url,
+                    ip: req.ip ?? 'disabled',
                   };
                 },
                 res(res: Response) {

@@ -22,7 +22,6 @@ export class ThrottlerCustomGuard extends ThrottlerGuard {
     //   return Promise.resolve(`ip-${xff.split(',')[0].trim()}`);
     // }
 
-    console.log('ThrottlerCustomGuard: Tracking by IP', req.ip);
     return Promise.resolve(`ip-${req.ip}`);
   }
 }
