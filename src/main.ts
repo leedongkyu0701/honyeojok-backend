@@ -1,14 +1,17 @@
+import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import type { Express, NextFunction, Request, Response } from 'express';
+import type { Express } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { randomUUID } from 'crypto';
 import { GlobalExceptionFilter } from './common/exceptions/exception.filter';
+import { Logger } from 'nestjs-pino';
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger)); // LoggerModule이 제공하는 Logger를 NestJS의 로거로 설정하여, NestJS 내부 로그도 pino로 출력되도록 함
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
   expressApp.set('trust proxy', true); // 클라우드 환경에서 프록시 서버 뒤에 있을 때 클라이언트의 IP 주소를 올바르게 인식하도록 설정
@@ -59,18 +62,19 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const incomingRequestId =
-      req.header('x-request-id') ?? req.header('x-correlation-id');
-    const requestId = incomingRequestId
-      ? String(incomingRequestId)
-      : randomUUID();
+  // app.use((req: Request, res: Response, next: NextFunction) => {
+  //   const incomingRequestId =
+  //     req.header('x-request-id') ?? req.header('x-correlation-id');
+  //   const requestId = incomingRequestId
+  //     ? String(incomingRequestId)
+  //     : randomUUID();
 
-    req.requestId = requestId;
-    res.setHeader('x-request-id', requestId);
+  //   req.requestId = requestId;
+  //   res.setHeader('x-request-id', requestId);
 
-    next();
-  });
+  //   next();
+  // }); pino의 genReqId 옵션으로 대체
+
   app.use(cookieParser());
   app.use(helmet({ contentSecurityPolicy: isProd ? undefined : false }));
   app.useGlobalFilters(new GlobalExceptionFilter());
