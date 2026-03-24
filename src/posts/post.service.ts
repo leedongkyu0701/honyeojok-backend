@@ -62,7 +62,18 @@ export class PostService {
           );
         }
         let destination: Destination | undefined;
-
+        if (createPostDto.type === PostType.REVIEW) {
+          if (
+            createPostDto.rating === undefined ||
+            createPostDto.rating < 1 ||
+            createPostDto.rating > 5
+          ) {
+            throw BaseException.badRequest(
+              'Rating must be between 1 and 5',
+              ErrorCode.VALIDATION_FAILED,
+            );
+          }
+        }
         if (
           createPostDto.type === PostType.REVIEW &&
           createPostDto.regionSlug

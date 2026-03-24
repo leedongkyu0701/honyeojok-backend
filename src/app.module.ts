@@ -72,10 +72,24 @@ import { randomUUID } from 'crypto';
           process.env.NODE_ENV === 'production'
             ? {
                 req(req: Request) {
+                  const url = new URL(req.originalUrl, 'http://dummy');
+
+                  if (url.searchParams.has('code')) {
+                    url.searchParams.set('code', '[REDACTED]');
+                  }
+
+                  if (url.searchParams.has('state')) {
+                    url.searchParams.set('state', '[REDACTED]');
+                  }
+
+                  if (url.searchParams.has('token')) {
+                    url.searchParams.set('token', '[REDACTED]');
+                  }
+
                   return {
                     id: req.id,
                     method: req.method,
-                    url: req.url,
+                    url: url.pathname + url.search,
                   };
                 },
                 res(res: Response) {
