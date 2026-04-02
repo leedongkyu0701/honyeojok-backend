@@ -427,7 +427,21 @@ export class PostService {
       postId,
       isDeleted: false,
     });
-    return this.commentRepo.save(comment);
+    await this.commentRepo.save(comment);
+    return {
+      id: comment.id,
+      content: comment.content,
+      isDeleted: comment.isDeleted,
+      createdAt: comment.createdAt,
+      parentId: comment.parentId,
+      postId: comment.postId,
+      userId: comment.userId,
+      user: {
+        id: user.id,
+        nickName: user.nickName ?? '탈퇴한 혼여족',
+      },
+      children: [],
+    };
   }
 
   async getCommentsByPost(postId: number): Promise<CommentResponseDto[]> {

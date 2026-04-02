@@ -213,7 +213,7 @@ export const mukhoSpots: SpotSeedData[] = [
   {
     regionSlug: 'mukho',
     slug: 'mangsang-beach',
-    name: 'mangsang-beach',
+    name: '망상해변',
     summary: '길게 이어지는 바다 산책, 혼자 걷기 좋은 동해 대표 해변',
     description: `망상해변은 수평선이 끝없이 펼쳐진 광활한 모래사장이 특징인 곳이에요. 해변 길이가 매우 길어 아무리 사람이 많아도 조금만 옆으로 걸어가면 나만의 조용한 공간을 찾을 수 있습니다.
 
