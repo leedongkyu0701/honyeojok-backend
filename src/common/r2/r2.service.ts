@@ -7,12 +7,16 @@ import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class R2Service {
-  private r2Client: S3Client;
-  private bucketName: string;
-  private publicUrl: string;
+  private r2Client?: S3Client;
+  private bucketName?: string;
+  private publicUrl?: string;
   private readonly logger = new Logger(R2Service.name);
 
   constructor(private readonly configService: ConfigService) {
+    if (this.configService.get<string>('IMAGE_UPLOAD_ENABLED') !== 'true') {
+      return;
+    }
+
     const accountId = this.configService.get<string>('R2_ACCOUNT_ID');
     const accessKeyId = this.configService.get<string>('R2_ACCESS_KEY_ID');
     const secretAccessKey = this.configService.get<string>(
@@ -44,9 +48,19 @@ export class R2Service {
   }
 
   async uploadImage(key: string, body: Buffer): Promise<string> {
+    const r2Client = this.r2Client;
+    const bucketName = this.bucketName;
+    const publicUrl = this.publicUrl;
+
+    if (!r2Client || !bucketName || !publicUrl) {
+      throw BaseException.serviceUnavailable('R2 config missing', {
+        provider: 'r2',
+      });
+    }
+
     try {
       const command = new PutObjectCommand({
-        Bucket: this.bucketName,
+        Bucket: bucketName,
         Key: key,
         Body: body,
         ContentType: 'image/webp',
@@ -54,8 +68,8 @@ export class R2Service {
         CacheControl: 'public, max-age=31536000, immutable',
       });
 
-      await this.r2Client.send(command);
-      return `${this.publicUrl}/${key}`;
+      await r2Client.send(command);
+      return `${publicUrl}/${key}`;
     } catch (error) {
       this.logger.error(`Failed to upload image with key ${key}:`, error);
       throw new BaseException(
@@ -67,13 +81,20 @@ export class R2Service {
   }
 
   async deleteImage(key: string): Promise<void> {
+    const r2Client = this.r2Client;
+    const bucketName = this.bucketName;
+
+    if (!r2Client || !bucketName) {
+      return;
+    }
+
     try {
       const command = new DeleteObjectCommand({
-        Bucket: this.bucketName,
+        Bucket: bucketName,
         Key: key,
       });
 
-      await this.r2Client.send(command);
+      await r2Client.send(command);
     } catch (error) {
       this.logger.error(`Failed to delete image with key ${key}:`, error);
       throw BaseException.serviceUnavailable('Image delete failed', {
@@ -83,6 +104,6 @@ export class R2Service {
   }
 
   extractKeyFromUrl(url: string): string {
-    return url.replace(`${this.publicUrl}/`, '');
+    return this.publicUrl ? url.replace(`${this.publicUrl}/`, '') : url;
   }
 }

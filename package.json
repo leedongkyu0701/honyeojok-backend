@@ -1,8 +1,8 @@
 {
   "name": "honyeojok-backend",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Backend API server for the HonyeoJok travel platform",
+  "author": "Lee Dongkyu",
   "private": true,
   "license": "UNLICENSED",
   "engines": {
@@ -102,6 +102,9 @@
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
