@@ -2,12 +2,11 @@
 
 혼자 여행하는 사용자를 위한 지역 기반 여행 정보·커뮤니티 플랫폼의 백엔드 API 서버입니다.
 
-## 관련 링크
+## 서비스 링크
 
-- Frontend Repository: 확인 필요
-- Backend Repository: https://github.com/leedongkyu0701/honyeojok-backend
-- API Server: 확인 필요
-- Swagger: 확인 필요
+- 배포 사이트: `https://www.honyeojok.com`
+
+> 학습용 프로젝트로, 백엔드 서버의 Cold Start로 인해 첫 요청 시 응답에 시간이 걸릴 수 있습니다.
 
 ## 프로젝트 소개
 
