@@ -1,25 +1,48 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { AppModule } from '../src/app.module';
+import { HealthModule } from '../src/health/health.module';
 
-describe('AppController (e2e)', () => {
+function isHealthResponse(
+  value: unknown,
+): value is { status: 'ok'; timestamp: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'status' in value &&
+    value.status === 'ok' &&
+    'timestamp' in value &&
+    typeof value.timestamp === 'string'
+  );
+}
+
+describe('Health endpoint (e2e)', () => {
   let app: INestApplication<App>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [HealthModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('/health (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/health')
+      .expect(200);
+
+    const body: unknown = response.body;
+    expect(isHealthResponse(body)).toBe(true);
+
+    if (!isHealthResponse(body)) return;
+
+    expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false);
   });
 });
