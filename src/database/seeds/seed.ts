@@ -1,4 +1,4 @@
-import { AppDataSource } from '../data-source';
+import { AppDataSource } from 'src/data-source';
 import { runSeed } from './seed-runner';
 console.log('🚀 Starting seed...');
 
