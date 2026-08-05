@@ -1,8 +1,8 @@
 import type { EntityManager } from 'typeorm';
 import { In } from 'typeorm';
 
-import { Destination } from '../../destinations/destination.entity';
-import { Tag } from '../../tags/tag.entity';
+import { Destination } from 'src/modules/destinations/entities/destination.entity';
+import { Tag } from 'src/modules/tags/entities/tag.entity';
 
 import { destinations } from '../data/destinations';
 

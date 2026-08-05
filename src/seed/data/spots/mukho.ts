@@ -1,5 +1,5 @@
-import { ImageSource } from 'src/types/util';
-import { SpotCategory } from 'src/types/spot';
+import { ImageSource } from 'src/infrastructure/media/enums/image-source.enum';
+import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
 import imageMap from '../../image-map.json';
 import type { SpotSeedData } from './index';
 

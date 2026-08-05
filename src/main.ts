@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import type { Express } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { GlobalExceptionFilter } from './common/exceptions/exception.filter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {

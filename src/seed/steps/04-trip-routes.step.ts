@@ -3,12 +3,12 @@ import { In } from 'typeorm';
 
 import { tripRoutes } from '../data/trip-routes/index';
 
-import { TripRoute } from '../../trip-routes/trip-route.entity';
-import { TripRouteDay } from '../../trip-routes/trip-routes-day.entity';
-import { TripRouteItem } from '../../trip-routes/trip-route-item.entity';
-import { Destination } from '../../destinations/destination.entity';
-import { Tag } from '../../tags/tag.entity';
-import { Spot } from '../../spots/spot.entity';
+import { TripRoute } from 'src/modules/trip-routes/entities/trip-route.entity';
+import { TripRouteDay } from 'src/modules/trip-routes/entities/trip-route-day.entity';
+import { TripRouteItem } from 'src/modules/trip-routes/entities/trip-route-item.entity';
+import { Destination } from 'src/modules/destinations/entities/destination.entity';
+import { Tag } from 'src/modules/tags/entities/tag.entity';
+import { Spot } from 'src/modules/spots/entities/spot.entity';
 
 export async function seedTripRoutes(m: EntityManager) {
   const routeRepo = m.getRepository(TripRoute);

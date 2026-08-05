@@ -1,5 +1,5 @@
-import { ProvinceGroup } from 'src/types/destination';
-import { ImageSource } from 'src/types/util';
+import { ProvinceGroup } from 'src/modules/destinations/enums/province-group.enum';
+import { ImageSource } from 'src/infrastructure/media/enums/image-source.enum';
 import imageMap from '../image-map.json';
 
 interface DestinationSeedData {

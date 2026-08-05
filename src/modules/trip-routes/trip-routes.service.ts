@@ -1,0 +1,500 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { In } from 'typeorm';
+import { TripRoute } from './entities/trip-route.entity';
+import { Destination } from 'src/modules/destinations/entities/destination.entity';
+import { CreateTripRouteRequestDto } from './dto/request/create-trip-route.request.dto';
+import { TripRouteCardResponseDto } from './dto/response/trip-route-card.response.dto';
+import { TripRouteDetailResponseDto } from './dto/response/trip-route-detail.response.dto';
+import { Bookmark } from './entities/bookmark.entity';
+import { User } from 'src/modules/users/entities/user.entity';
+import { Tag } from 'src/modules/tags/entities/tag.entity';
+import { Spot } from 'src/modules/spots/entities/spot.entity';
+import { TripRouteDay } from './entities/trip-route-day.entity';
+import { TripRouteItem } from './entities/trip-route-item.entity';
+import { DataSource } from 'typeorm';
+import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
+import type { GeoPoint } from 'src/modules/spots/types/geo-point.type';
+import { SpotsService } from 'src/modules/spots/spots.service';
+@Injectable()
+export class TripRoutesService {
+  constructor(
+    @InjectRepository(TripRoute)
+    private readonly tripRouteRepo: Repository<TripRoute>,
+
+    @InjectRepository(Destination)
+    private readonly destinationRepo: Repository<Destination>,
+
+    @InjectRepository(Bookmark)
+    private readonly bookmarkRepo: Repository<Bookmark>,
+
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+
+    private readonly dataSource: DataSource,
+    private readonly spotService: SpotsService,
+  ) {}
+
+  async findHotRoutes(): Promise<TripRouteCardResponseDto[]> {
+    const routes = await this.tripRouteRepo.find({
+      order: { bookmarkCount: 'DESC', id: 'DESC' },
+      relations: ['destination'],
+      take: 6,
+    });
+    return routes.map((route) => ({
+      id: route.id,
+      slug: route.slug,
+      title: route.title,
+      summary: route.summary,
+      days: route.days,
+      regionSlug: route.destination.slug,
+      bookmarkCount: route.bookmarkCount,
+    }));
+  }
+
+  async findByRegion(region: string): Promise<TripRouteCardResponseDto[]> {
+    const destination = await this.destinationRepo.findOne({
+      where: { slug: region },
+      select: ['id', 'slug'],
+    });
+
+    if (!destination) {
+      throw BaseException.notFound(
+        'Destination not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+      );
+    }
+
+    const routes = await this.tripRouteRepo.find({
+      where: {
+        destination: destination,
+      },
+      order: { bookmarkCount: 'DESC', id: 'DESC' },
+      relations: ['destination'],
+    });
+
+    return routes.map((route) => ({
+      id: route.id,
+      slug: route.slug,
+      title: route.title,
+      summary: route.summary,
+      days: route.days,
+      regionSlug: route.destination.slug,
+      bookmarkCount: route.bookmarkCount,
+    }));
+  }
+
+  async findByRegionAndSlug(
+    region: string,
+    slug: string,
+    userId?: number,
+  ): Promise<TripRouteDetailResponseDto> {
+    const destination = await this.destinationRepo.findOne({
+      where: { slug: region },
+      select: ['id', 'slug'],
+    });
+
+    if (!destination) {
+      throw BaseException.notFound(
+        'Destination not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+      );
+    }
+
+    const route = await this.tripRouteRepo
+      .createQueryBuilder('route')
+      .leftJoinAndSelect('route.tags', 'tag')
+      .leftJoinAndSelect('route.daysPlan', 'day')
+      .leftJoinAndSelect('day.items', 'item')
+      .leftJoinAndSelect('item.spot', 'spot')
+      .where('route.slug = :slug', { slug })
+      .orderBy('day.dayNumber', 'ASC')
+      .addOrderBy('item.order', 'ASC')
+      .getOne();
+
+    if (!route) {
+      throw BaseException.notFound(
+        'TripRoute not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+      );
+    }
+
+    const bookmarkedByMe = userId
+      ? await this.bookmarkRepo.exists({
+          where: {
+            tripRoute: { id: route.id },
+            user: { id: userId },
+          },
+        })
+      : false;
+
+    return {
+      id: route.id,
+      slug: route.slug,
+      title: route.title,
+      summary: route.summary,
+      honyeoTip: route.honyeoTip ?? null,
+      days: route.days,
+      bookmarkCount: route.bookmarkCount,
+      bookmarkedByMe,
+      honyeoCost: route.honyeoCost ?? null,
+
+      tags: (route.tags ?? []).map((t) => ({
+        id: t.id,
+        slug: t.slug,
+        label: t.label,
+      })),
+
+      daysPlan: (route.daysPlan ?? []).map((d) => ({
+        id: d.id,
+        dayNumber: d.dayNumber,
+        title: d.title,
+        note: d.note,
+
+        items: (d.items ?? []).map((i) => ({
+          id: i.id,
+          order: i.order,
+          recommendedLevel: i.recommendedLevel,
+          title: i.title,
+          description: i.description,
+          imageUrl: i.imageUrl ?? null,
+          imageCredit: i.imageCredit ?? null,
+          lat: Number(i.lat) || null,
+          lng: Number(i.lng) || null,
+          address: i.address ?? null,
+          startTime: i.startTime ?? null,
+          endTime: i.endTime ?? null,
+          externalUrl: i.externalUrl ?? null,
+
+          spot: i.spot
+            ? {
+                id: i.spot.id,
+                slug: i.spot.slug,
+              }
+            : undefined,
+        })),
+      })),
+    };
+  }
+
+  async getNearbySpots(
+    routeSlug: string,
+    radiusKm: number,
+    categories?: SpotCategory[],
+    limit?: number,
+  ) {
+    const route = await this.tripRouteRepo.findOne({
+      where: { slug: routeSlug },
+      relations: { daysPlan: { items: { spot: true } } },
+    });
+    if (!route) {
+      throw BaseException.notFound(
+        'TripRoute not found',
+        ErrorCode.RESOURCE_NOT_FOUND,
+      );
+    }
+
+    const points = this.collectRoutePoints(route);
+
+    if (points.length === 0) {
+      return [];
+    }
+
+    const excludeSpotIds = new Set<number>();
+    for (const day of route.daysPlan ?? []) {
+      for (const item of day.items ?? []) {
+        if (typeof item.spotId === 'number') excludeSpotIds.add(item.spotId);
+      }
+    }
+
+    return this.spotService.findNearbyByPoints({
+      destinationId: route.destinationId,
+      points,
+      radiusKm,
+      categories,
+      limit: limit ?? 10,
+      excludeSpotIds: [...excludeSpotIds],
+    });
+  }
+
+  // 현재는 여행 루트 내 모든 점이라서 좀 넓게 서칭하는데, 나중에 가게들 늘어나면 day별로 점을 따로 뽑아서 서칭하는 것으로 리팩토링 예정
+  private collectRoutePoints(route: TripRoute): GeoPoint[] {
+    const raw: GeoPoint[] = [];
+
+    for (const day of route.daysPlan ?? []) {
+      for (const item of day.items ?? []) {
+        const lat = item.lat ?? item.spot?.lat ?? null;
+        const lng = item.lng ?? item.spot?.lng ?? null;
+        if (typeof lat === 'number' && typeof lng === 'number') {
+          raw.push({ lat, lng });
+        }
+      }
+    }
+
+    const uniq = new Map<string, GeoPoint>();
+    for (const p of raw) {
+      const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
+      if (!uniq.has(key)) uniq.set(key, p);
+    }
+
+    const pts = Array.from(uniq.values());
+    return pts.length > 30 ? pts.slice(0, 30) : pts;
+  }
+
+  async createOne(dto: CreateTripRouteRequestDto) {
+    return this.dataSource.transaction(async (m) => {
+      const destinationRepo = m.getRepository(Destination);
+      const tripRouteRepo = m.getRepository(TripRoute);
+      const dayRepo = m.getRepository(TripRouteDay);
+      const itemRepo = m.getRepository(TripRouteItem);
+      const tagRepo = m.getRepository(Tag);
+      const spotRepo = m.getRepository(Spot);
+
+      const destination = await destinationRepo.findOne({
+        where: { slug: dto.destinationSlug },
+      });
+
+      if (!destination) {
+        throw BaseException.notFound(
+          'Destination not found',
+          ErrorCode.RESOURCE_NOT_FOUND,
+        );
+      }
+      // 1. 태그들 조회
+      const tags = dto.tagSlugs?.length
+        ? await tagRepo.find({ where: { slug: In(dto.tagSlugs) } })
+        : [];
+
+      if (dto.tagSlugs?.length && tags.length !== dto.tagSlugs.length) {
+        const found = new Set(tags.map((t) => t.slug));
+        const missing = dto.tagSlugs.filter((s) => !found.has(s));
+        throw new BadRequestException(
+          `Invalid tag slugs: ${missing.join(', ')}`,
+        );
+      }
+
+      // 2. 여행 루트 생성
+      const tripRoute = tripRouteRepo.create({
+        slug: dto.slug,
+        title: dto.title,
+        summary: dto.summary,
+        honyeoTip: dto.honyeoTip,
+        days: dto.days,
+        destination: destination,
+        bookmarkCount: 0,
+        honyeoCost: dto.honyeoCost,
+        tags: tags,
+      });
+
+      await tripRouteRepo.save(tripRoute);
+
+      // 2.5) SpotSlug들 미리 로드(N+1 방지)
+      const spotSlugs = (dto.daysPlan ?? [])
+        .flatMap((d) => d.items ?? [])
+        .map((it) => it.spotSlug)
+        .filter((v): v is string => !!v);
+
+      const spotMap = new Map<string, Spot>();
+      if (spotSlugs.length) {
+        const spots = await spotRepo.find({
+          where: { slug: In([...new Set(spotSlugs)]) },
+        });
+        for (const s of spots) spotMap.set(s.slug, s);
+      }
+
+      // 3. daysPlan 생성
+      const daysPlanEntities: TripRouteDay[] = [];
+      for (const dayDto of dto.daysPlan ?? []) {
+        const dayEntity = dayRepo.create({
+          dayNumber: dayDto.dayNumber,
+          title: dayDto.title,
+          note: dayDto.note,
+          tripRoute: tripRoute,
+        });
+        await dayRepo.save(dayEntity);
+
+        // 4. 각 day의 items 생성
+        const itemEntities: TripRouteItem[] = [];
+        for (const itemDto of dayDto.items ?? []) {
+          const spot = itemDto.spotSlug
+            ? spotMap.get(itemDto.spotSlug)
+            : undefined;
+          if (itemDto.spotSlug && !spot) {
+            throw BaseException.notFound(
+              `Spot not found: ${itemDto.spotSlug}`,
+              ErrorCode.RESOURCE_NOT_FOUND,
+            );
+          }
+
+          const imageUrl = spot?.imageUrl ?? itemDto.imageUrl;
+          const imageCredit = spot?.imageCredit ?? itemDto.imageCredit;
+          const lat = spot?.lat ?? itemDto.lat;
+          const lng = spot?.lng ?? itemDto.lng;
+          const address = spot?.address ?? itemDto.address;
+
+          const itemEntity = itemRepo.create({
+            order: itemDto.order,
+            recommendedLevel: itemDto.recommendedLevel,
+            title: itemDto.title,
+            description: itemDto.description,
+            imageUrl: imageUrl,
+            imageCredit: imageCredit,
+            lat: lat,
+            lng: lng,
+            address: address,
+            startTime: itemDto.startTime,
+            endTime: itemDto.endTime,
+            externalUrl: itemDto.externalUrl,
+            spot: spot ?? undefined,
+            day: dayEntity,
+          });
+          itemEntities.push(itemEntity);
+        }
+        if (itemEntities.length) {
+          await itemRepo.save(itemEntities);
+        }
+        dayEntity.items = itemEntities;
+
+        daysPlanEntities.push(dayEntity);
+      }
+      tripRoute.daysPlan = daysPlanEntities;
+
+      return tripRouteRepo.save(tripRoute);
+    });
+  }
+
+  async toggleBookmark(
+    userId: number,
+    tripRouteSlug: string,
+  ): Promise<{ bookmarked: boolean; bookmarkCount: number }> {
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, { where: { id: userId } });
+      const tripRoute = await manager.findOne(TripRoute, {
+        where: { slug: tripRouteSlug },
+      });
+
+      if (!user || !tripRoute) {
+        throw BaseException.notFound(
+          'User or TripRoute not found',
+          ErrorCode.RESOURCE_NOT_FOUND,
+        );
+      }
+
+      const existingBookmark = await manager.getRepository(Bookmark).findOne({
+        where: {
+          user: { id: userId },
+          tripRoute: { id: tripRoute.id },
+        },
+      });
+
+      if (existingBookmark) {
+        await manager.remove(existingBookmark);
+        await manager.decrement(
+          TripRoute,
+          { id: tripRoute.id },
+          'bookmarkCount',
+          1,
+        );
+        const updatedRoute = await manager.findOne(TripRoute, {
+          where: { id: tripRoute.id },
+        });
+        return {
+          bookmarked: false,
+          bookmarkCount: updatedRoute!.bookmarkCount,
+        };
+      } else {
+        const newBookmark = manager.create(Bookmark, { user, tripRoute });
+        await manager.save(newBookmark);
+        await manager.increment(
+          TripRoute,
+          { id: tripRoute.id },
+          'bookmarkCount',
+          1,
+        );
+        const updatedRoute = await manager.findOne(TripRoute, {
+          where: { id: tripRoute.id },
+        });
+        return { bookmarked: true, bookmarkCount: updatedRoute!.bookmarkCount };
+      }
+    });
+  }
+
+  async addBookmark(userId: number, tripRouteSlug: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, { where: { id: userId } });
+      const tripRoute = await manager.findOne(TripRoute, {
+        where: { slug: tripRouteSlug },
+      });
+
+      if (!user || !tripRoute) {
+        throw BaseException.notFound(
+          'User or TripRoute not found',
+          ErrorCode.RESOURCE_NOT_FOUND,
+        );
+      }
+
+      const existingBookmark = await manager.getRepository(Bookmark).exists({
+        where: {
+          user: { id: userId },
+          tripRoute: { id: tripRoute.id },
+        },
+      });
+
+      if (existingBookmark) {
+        return { bookmarked: true, bookmarkCount: tripRoute.bookmarkCount };
+      }
+      const newBookmark = manager.create(Bookmark, { user, tripRoute });
+      await manager.save(newBookmark);
+      await manager.increment(
+        TripRoute,
+        { id: tripRoute.id },
+        'bookmarkCount',
+        1,
+      );
+      const updatedRoute = await manager.findOne(TripRoute, {
+        where: { id: tripRoute.id },
+      });
+      return { bookmarked: true, bookmarkCount: updatedRoute!.bookmarkCount };
+    });
+  }
+
+  async removeBookmark(userId: number, tripRouteSlug: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(User, { where: { id: userId } });
+      const tripRoute = await manager.findOne(TripRoute, {
+        where: { slug: tripRouteSlug },
+      });
+
+      if (!user || !tripRoute) {
+        throw BaseException.notFound(
+          'User or TripRoute not found',
+          ErrorCode.RESOURCE_NOT_FOUND,
+        );
+      }
+
+      const existingBookmark = await manager.getRepository(Bookmark).findOne({
+        where: {
+          user: { id: userId },
+          tripRoute: { id: tripRoute.id },
+        },
+      });
+
+      if (!existingBookmark) {
+        return { bookmarked: false, bookmarkCount: tripRoute.bookmarkCount };
+      }
+      await manager.remove(existingBookmark);
+      await manager.decrement(
+        TripRoute,
+        { id: tripRoute.id },
+        'bookmarkCount',
+        1,
+      );
+      const updatedRoute = await manager.findOne(TripRoute, {
+        where: { id: tripRoute.id },
+      });
+      return { bookmarked: false, bookmarkCount: updatedRoute!.bookmarkCount };
+    });
+  }
+}

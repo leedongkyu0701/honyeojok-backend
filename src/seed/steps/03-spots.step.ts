@@ -1,12 +1,12 @@
 import type { EntityManager } from 'typeorm';
 import { In } from 'typeorm';
 
-import { Spot } from '../../spots/spot.entity';
-import { Destination } from '../../destinations/destination.entity';
-import { Tag } from '../../tags/tag.entity';
+import { Spot } from 'src/modules/spots/entities/spot.entity';
+import { Destination } from 'src/modules/destinations/entities/destination.entity';
+import { Tag } from 'src/modules/tags/entities/tag.entity';
 
 import { spots } from '../data/spots/index';
-import { SpotCategory } from 'src/types/spot';
+import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
 
 function shuffleSpots<T>(arr: T[]) {
   for (let i = arr.length - 1; i > 0; i--) {

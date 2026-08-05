@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
-// import { JwtUser } from 'src/types/user';
+// import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
 
 @Injectable()
 export class ThrottlerCustomGuard extends ThrottlerGuard {

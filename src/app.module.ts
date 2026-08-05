@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DestinationsModule } from './destinations/destinations.module';
-import { TripRoutesModule } from './trip-routes/trip-routes.module';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
+import { DestinationsModule } from 'src/modules/destinations/destinations.module';
+import { TripRoutesModule } from 'src/modules/trip-routes/trip-routes.module';
+import { AuthModule } from 'src/modules/auth/auth.module';
+import { UsersModule } from 'src/modules/users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SpotModule } from './spots/spot.module';
-import { PostModule } from './posts/post.module';
-import { TagsModule } from './tags/tags.module';
+import { SpotsModule } from 'src/modules/spots/spots.module';
+import { PostsModule } from 'src/modules/posts/posts.module';
+import { TagsModule } from 'src/modules/tags/tags.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerCustomGuard } from './common/guards/throttler.guard';
 import { APP_GUARD } from '@nestjs/core';
-import { HealthModule } from './health/health.module';
-import { DbShutdownService } from './common/db-shutdown.service';
+import { HealthModule } from 'src/modules/health/health.module';
+import { DbShutdownService } from './database/db-shutdown.service';
 import { LoggerModule } from 'nestjs-pino';
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
@@ -145,9 +145,9 @@ import { randomUUID } from 'crypto';
     DestinationsModule,
     TripRoutesModule,
     AuthModule,
-    UserModule,
-    SpotModule,
-    PostModule,
+    UsersModule,
+    SpotsModule,
+    PostsModule,
     TagsModule,
     HealthModule,
   ],
