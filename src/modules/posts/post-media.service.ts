@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { processImageBuffer } from 'src/infrastructure/media/image-processor.util';
 import { R2Service } from 'src/infrastructure/storage/r2/r2.service';
+import { storageConfig } from 'src/config/storage.config';
 
 type PreparedPostImage = {
   buffer: Buffer;
@@ -22,11 +23,12 @@ export class PostMediaService {
 
   constructor(
     private readonly r2Service: R2Service,
-    private readonly configService: ConfigService,
+    @Inject(storageConfig.KEY)
+    private readonly config: ConfigType<typeof storageConfig>,
   ) {}
 
   assertUploadsEnabled(): void {
-    if (this.configService.getOrThrow('IMAGE_UPLOAD_ENABLED') !== 'true') {
+    if (!this.config.imageUploadEnabled) {
       throw BaseException.serviceUnavailable('Image uploads are disabled');
     }
   }

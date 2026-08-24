@@ -10,6 +10,8 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { OriginGuard } from './guards/origin.guard';
 import { RoleGuard } from './guards/role.guard';
 import { JwtOptionalGuard } from './guards/jwt-optional.guard';
+import { AuthCookieService } from './auth-cookie.service';
+import { OAuthStateService } from './oauth/oauth-state.service';
 
 @Global()
 @Module({
@@ -23,6 +25,8 @@ import { JwtOptionalGuard } from './guards/jwt-optional.guard';
     JwtOptionalGuard,
     OriginGuard,
     RoleGuard,
+    AuthCookieService,
+    OAuthStateService,
   ],
   controllers: [AuthController],
   exports: [
@@ -31,6 +35,7 @@ import { JwtOptionalGuard } from './guards/jwt-optional.guard';
     JwtOptionalGuard,
     OriginGuard,
     RoleGuard,
+    AuthCookieService,
   ],
 })
 export class AuthModule {}

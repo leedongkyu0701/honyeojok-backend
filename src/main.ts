@@ -6,21 +6,21 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import type { Express } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { Logger } from 'nestjs-pino';
+import { appConfig } from './config/app.config';
+import type { ConfigType } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  app.useLogger(app.get(Logger)); // LoggerModule이 제공하는 Logger를 NestJS의 로거로 설정하여, NestJS 내부 로그도 pino로 출력되도록 함
+  app.useLogger(app.get(Logger));
+  const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
-  expressApp.set('trust proxy', true); // 클라우드 환경에서 프록시 서버 뒤에 있을 때 클라이언트의 IP 주소를 올바르게 인식하도록 설정
-  expressApp.disable('x-powered-by'); // 보안 강화: Express가 'X-Powered-By' 헤더를 보내지 않도록 설정
-  app.enableShutdownHooks(); // 애플리케이션이 종료될 때 graceful shutdown을 지원하도록 설정
+  expressApp.set('trust proxy', config.trustProxyHops);
+  expressApp.disable('x-powered-by');
+  app.enableShutdownHooks();
 
-  const isProd = process.env.NODE_ENV === 'production';
-
-  if (!isProd) {
+  if (config.swaggerEnabled) {
     const config = new DocumentBuilder()
       .setTitle('HonyeoJok API')
       .setDescription('HonyeoJok`(NestJS) API 문서입니다.')
@@ -50,15 +50,8 @@ async function bootstrap() {
     });
   }
 
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'https://honyeojok-front-git-develop-leedongkyus-projects-c6361242.vercel.app',
-    'https://honyeojok.com',
-    'https://www.honyeojok.com',
-  ];
-
   app.enableCors({
-    origin: allowedOrigins,
+    origin: config.corsOrigins,
     credentials: true,
   });
 
@@ -76,8 +69,11 @@ async function bootstrap() {
   // }); pino의 genReqId 옵션으로 대체
 
   app.use(cookieParser());
-  app.use(helmet({ contentSecurityPolicy: isProd ? undefined : false }));
-  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.use(
+    helmet({
+      contentSecurityPolicy: config.swaggerEnabled ? false : undefined,
+    }),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // dto에 정의된 속성만 허용하고, 그렇지 않은 속성은 자동으로 제거
@@ -85,6 +81,6 @@ async function bootstrap() {
       transform: true, // 요청 데이터를 dto 클래스의 인스턴스로 자동 변환
     }),
   );
-  await app.listen(process.env.PORT ?? 5001);
+  await app.listen(config.port);
 }
 void bootstrap();

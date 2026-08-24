@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from 'src/modules/users/users.service';
-import { ConfigService } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import { Request } from 'express';
 import { AuthProvider } from 'src/modules/auth/enums/auth-provider.enum';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import { authConfig } from 'src/config/auth.config';
 
 interface RefreshRequest extends Request {
   cookies: {
@@ -20,7 +21,8 @@ export class JwtRefreshStrategy extends PassportStrategy(
 ) {
   constructor(
     private readonly userService: UsersService,
-    private readonly configService: ConfigService,
+    @Inject(authConfig.KEY)
+    config: ConfigType<typeof authConfig>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -30,7 +32,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
           return refreshToken;
         },
       ]),
-      secretOrKey: configService.getOrThrow<string>('JWT_REFRESH_SECRET_KEY'),
+      secretOrKey: config.jwt.refreshSecret,
       passReqToCallback: true, // req 객체를 validate()로 전달
     });
   }

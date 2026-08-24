@@ -1,9 +1,10 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { S3Client } from '@aws-sdk/client-s3';
-import { ConfigService } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { Logger } from '@nestjs/common';
+import { storageConfig } from 'src/config/storage.config';
 
 @Injectable()
 export class R2Service {
@@ -12,18 +13,16 @@ export class R2Service {
   private publicUrl?: string;
   private readonly logger = new Logger(R2Service.name);
 
-  constructor(private readonly configService: ConfigService) {
-    if (this.configService.get<string>('IMAGE_UPLOAD_ENABLED') !== 'true') {
+  constructor(
+    @Inject(storageConfig.KEY)
+    private readonly config: ConfigType<typeof storageConfig>,
+  ) {
+    if (!this.config.imageUploadEnabled) {
       return;
     }
 
-    const accountId = this.configService.get<string>('R2_ACCOUNT_ID');
-    const accessKeyId = this.configService.get<string>('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.get<string>(
-      'R2_SECRET_ACCESS_KEY',
-    );
-    const bucketName = this.configService.get<string>('R2_BUCKET_NAME');
-    const publicUrl = this.configService.get<string>('R2_PUBLIC_URL');
+    const { accountId, accessKeyId, secretAccessKey, bucketName, publicUrl } =
+      this.config.r2;
 
     if (
       !accountId ||

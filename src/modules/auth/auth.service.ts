@@ -1,6 +1,6 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { Inject, Injectable, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { UsersService } from 'src/modules/users/users.service';
 import { User } from 'src/modules/users/entities/user.entity';
@@ -14,13 +14,15 @@ import type {
 } from 'src/modules/auth/types/oauth-provider-response.types';
 import type { SocialLoginInput } from './types/social-login.input';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
+import { authConfig } from 'src/config/auth.config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    @Inject(authConfig.KEY)
+    private readonly config: ConfigType<typeof authConfig>,
   ) {}
 
   async socialLogin(
@@ -65,26 +67,13 @@ export class AuthService {
   }
 
   async naverAccessToken(code: string): Promise<NaverTokenResponse> {
-    const CLIENT_ID = this.configService.getOrThrow<string>('NAVER_CLIENT_ID');
-    const CLIENT_SECRET = this.configService.getOrThrow<string>(
-      'NAVER_CLIENT_SECRET',
-    );
-    const REDIRECT_URI =
-      this.configService.getOrThrow<string>('NAVER_REDIRECT_URI');
-
-    if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-      throw new BaseException(
-        'Naver OAuth configuration is missing',
-        ErrorCode.OAUTH_CONFIG_MISSING,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const { clientId, clientSecret, redirectUri } = this.config.oauth.naver;
 
     const params = new URLSearchParams({
       grant_type: 'authorization_code',
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
       code,
     });
 
@@ -141,26 +130,13 @@ export class AuthService {
   }
 
   async kakaoAccessToken(code: string): Promise<KakaoTokenResponse> {
-    const CLIENT_ID = this.configService.getOrThrow<string>('KAKAO_CLIENT_ID');
-    const CLIENT_SECRET = this.configService.getOrThrow<string>(
-      'KAKAO_CLIENT_SECRET',
-    );
-    const REDIRECT_URI =
-      this.configService.getOrThrow<string>('KAKAO_REDIRECT_URI');
-
-    if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-      throw new BaseException(
-        'Kakao OAuth configuration is missing',
-        ErrorCode.OAUTH_CONFIG_MISSING,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const { clientId, clientSecret, redirectUri } = this.config.oauth.kakao;
 
     const params = new URLSearchParams();
     params.append('grant_type', 'authorization_code');
-    params.append('client_id', CLIENT_ID);
-    params.append('client_secret', CLIENT_SECRET);
-    params.append('redirect_uri', REDIRECT_URI);
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
+    params.append('redirect_uri', redirectUri);
     params.append('code', code);
 
     const response = await fetch('https://kauth.kakao.com/oauth/token', {
@@ -223,27 +199,13 @@ export class AuthService {
   async googleAccessToken(
     code: string,
   ): Promise<{ access_token: string; id_token: string }> {
-    const CLIENT_ID = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
-    const CLIENT_SECRET = this.configService.getOrThrow<string>(
-      'GOOGLE_CLIENT_SECRET',
-    );
-    const REDIRECT_URI = this.configService.getOrThrow<string>(
-      'GOOGLE_REDIRECT_URI',
-    );
-
-    if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
-      throw new BaseException(
-        'Google OAuth configuration is missing',
-        ErrorCode.OAUTH_CONFIG_MISSING,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const { clientId, clientSecret, redirectUri } = this.config.oauth.google;
 
     const params = new URLSearchParams({
       code,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     });
 
@@ -344,12 +306,12 @@ export class AuthService {
     };
 
     const accessToken = await this.jwtService.signAsync(accessPayload, {
-      secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET_KEY'),
+      secret: this.config.jwt.accessSecret,
       expiresIn: '1h',
     });
 
     const refreshToken = await this.jwtService.signAsync(refreshPayload, {
-      secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET_KEY'),
+      secret: this.config.jwt.refreshSecret,
       expiresIn: '7d',
     });
 

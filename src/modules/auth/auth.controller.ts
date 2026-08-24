@@ -6,9 +6,10 @@ import {
   Get,
   Query,
   UseGuards,
+  Inject,
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
-import { ConfigService } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 
 import { AuthService } from './auth.service';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
@@ -17,11 +18,6 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthProvider } from 'src/modules/auth/enums/auth-provider.enum';
 import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
 import { SocialLoginInput } from './types/social-login.input';
-import {
-  verifyOAuthStateOrThrow,
-  generateOAuthState,
-  setOAuthStateCookie,
-} from './oauth/oauth-state.util';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
@@ -29,9 +25,12 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
 } from '@nestjs/swagger';
-import { getRefreshCookieOptions } from './cookies';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { OriginGuard } from './guards/origin.guard';
+import { appConfig } from 'src/config/app.config';
+import { authConfig } from 'src/config/auth.config';
+import { AuthCookieService } from './auth-cookie.service';
+import { OAuthStateService } from './oauth/oauth-state.service';
 
 interface CookieRequest extends Request {
   cookies: { [key: string]: string };
@@ -43,24 +42,27 @@ interface CookieRequest extends Request {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly configService: ConfigService,
+    @Inject(appConfig.KEY)
+    private readonly appConfiguration: ConfigType<typeof appConfig>,
+    @Inject(authConfig.KEY)
+    private readonly authConfiguration: ConfigType<typeof authConfig>,
+    private readonly authCookieService: AuthCookieService,
+    private readonly oauthStateService: OAuthStateService,
   ) {}
 
   private get frontendOrigin(): string {
-    return this.configService.getOrThrow('FRONTEND_ORIGIN');
+    return this.appConfiguration.frontendBaseUrl;
   }
 
   @Get('kakao')
   @ApiOperation({ summary: 'Kakao OAuth 로그인 요청(302 Redirect)' })
   kakaoLogin(@Res() res: Response) {
-    const CLIENT_ID = this.configService.getOrThrow<string>('KAKAO_CLIENT_ID');
-    const REDIRECT_URI =
-      this.configService.getOrThrow<string>('KAKAO_REDIRECT_URI');
-    const state = generateOAuthState(); // CSRF 방지 위한 랜덤 문자열 생성
-    setOAuthStateCookie(res, AuthProvider.KAKAO, state);
+    const { clientId, redirectUri } = this.authConfiguration.oauth.kakao;
+    const state = this.oauthStateService.generate();
+    this.oauthStateService.setCookie(res, AuthProvider.KAKAO, state);
     const kakaoAuthURL =
       `https://kauth.kakao.com/oauth/authorize?response_type=code` +
-      `&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
+      `&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
     return res.redirect(kakaoAuthURL);
   }
 
@@ -73,7 +75,12 @@ export class AuthController {
     @Req() req: CookieRequest,
   ) {
     try {
-      verifyOAuthStateOrThrow(req, res, AuthProvider.KAKAO, _state);
+      this.oauthStateService.verifyOrThrow(
+        req,
+        res,
+        AuthProvider.KAKAO,
+        _state,
+      );
       const tokens = await this.authService.kakaoAccessToken(code);
       const kakaoUser = await this.authService.kakaoUserInfo(
         tokens.access_token,
@@ -90,7 +97,7 @@ export class AuthController {
       res.cookie(
         'refreshToken',
         refreshToken,
-        getRefreshCookieOptions(this.configService),
+        this.authCookieService.getRefreshCookieOptions(),
       );
 
       // 토큰을 URL로 넘기지 말고, 프론트 리다이렉트 페이지에서 바로 refresh 토큰 쿠키 읽어서 액세스 토큰 재발급 요청하도록 했음.
@@ -113,12 +120,9 @@ export class AuthController {
   @Get('google')
   @ApiOperation({ summary: 'Google OAuth 로그인 요청(302 Redirect)' })
   googleLogin(@Res() res: Response) {
-    const CLIENT_ID = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
-    const REDIRECT_URI = this.configService.getOrThrow<string>(
-      'GOOGLE_REDIRECT_URI',
-    );
-    const state = generateOAuthState();
-    setOAuthStateCookie(res, AuthProvider.GOOGLE, state);
+    const { clientId, redirectUri } = this.authConfiguration.oauth.google;
+    const state = this.oauthStateService.generate();
+    this.oauthStateService.setCookie(res, AuthProvider.GOOGLE, state);
 
     const scope = [
       'https://www.googleapis.com/auth/userinfo.email',
@@ -127,7 +131,7 @@ export class AuthController {
 
     const googleAuthURL =
       `https://accounts.google.com/o/oauth2/v2/auth?response_type=code` +
-      `&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}` +
+      `&client_id=${clientId}&redirect_uri=${redirectUri}` +
       `&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent` +
       `&state=${state}`;
 
@@ -143,7 +147,12 @@ export class AuthController {
     @Req() req: CookieRequest,
   ) {
     try {
-      verifyOAuthStateOrThrow(req, res, AuthProvider.GOOGLE, _state);
+      this.oauthStateService.verifyOrThrow(
+        req,
+        res,
+        AuthProvider.GOOGLE,
+        _state,
+      );
       const tokens = await this.authService.googleAccessToken(code);
       const googleUser = await this.authService.googleUserInfo(
         tokens.access_token,
@@ -160,7 +169,7 @@ export class AuthController {
       res.cookie(
         'refreshToken',
         refreshToken,
-        getRefreshCookieOptions(this.configService),
+        this.authCookieService.getRefreshCookieOptions(),
       );
 
       return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
@@ -182,14 +191,12 @@ export class AuthController {
   @Get('naver')
   @ApiOperation({ summary: 'Naver OAuth 로그인 요청(302 Redirect)' })
   naverLogin(@Res() res: Response) {
-    const CLIENT_ID = this.configService.getOrThrow<string>('NAVER_CLIENT_ID');
-    const REDIRECT_URI =
-      this.configService.getOrThrow<string>('NAVER_REDIRECT_URI');
-    const state = generateOAuthState();
-    setOAuthStateCookie(res, AuthProvider.NAVER, state);
+    const { clientId, redirectUri } = this.authConfiguration.oauth.naver;
+    const state = this.oauthStateService.generate();
+    this.oauthStateService.setCookie(res, AuthProvider.NAVER, state);
     const naverAuthURL =
       `https://nid.naver.com/oauth2.0/authorize?response_type=code` +
-      `&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
+      `&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
     return res.redirect(naverAuthURL);
   }
 
@@ -202,7 +209,12 @@ export class AuthController {
     @Req() req: CookieRequest,
   ) {
     try {
-      verifyOAuthStateOrThrow(req, res, AuthProvider.NAVER, _state);
+      this.oauthStateService.verifyOrThrow(
+        req,
+        res,
+        AuthProvider.NAVER,
+        _state,
+      );
       const tokens = await this.authService.naverAccessToken(code);
       const naverUser = await this.authService.naverUserInfo(
         tokens.access_token,
@@ -219,7 +231,7 @@ export class AuthController {
       res.cookie(
         'refreshToken',
         refreshToken,
-        getRefreshCookieOptions(this.configService),
+        this.authCookieService.getRefreshCookieOptions(),
       );
 
       return res.redirect(`${this.frontendOrigin}/auth/social-login-callback`);
@@ -259,7 +271,7 @@ export class AuthController {
     res.cookie(
       'refreshToken',
       tokens.refreshToken,
-      getRefreshCookieOptions(this.configService),
+      this.authCookieService.getRefreshCookieOptions(),
     );
 
     return { accessToken: tokens.accessToken };
@@ -274,7 +286,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.logout(user.id);
-    res.clearCookie('refreshToken', { path: '/auth' });
+    res.clearCookie(
+      'refreshToken',
+      this.authCookieService.getRefreshCookieClearOptions(),
+    );
     return { ok: true };
   }
 
@@ -287,7 +302,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.withdraw(user.id);
-    res.clearCookie('refreshToken', { path: '/auth' });
+    res.clearCookie(
+      'refreshToken',
+      this.authCookieService.getRefreshCookieClearOptions(),
+    );
     return { ok: true };
   }
 }

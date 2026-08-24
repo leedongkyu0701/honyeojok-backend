@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/modules/users/users.service';
+import { authConfig } from 'src/config/auth.config';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -13,7 +13,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: UsersService, useValue: {} },
         { provide: JwtService, useValue: {} },
-        { provide: ConfigService, useValue: {} },
+        { provide: authConfig.KEY, useValue: {} },
       ],
     }).compile();
 

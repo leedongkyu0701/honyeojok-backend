@@ -5,7 +5,9 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Inject,
 } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 import {
@@ -14,6 +16,7 @@ import {
 } from 'src/common/exceptions/base.exception';
 import { Logger } from '@nestjs/common';
 import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
+import { appConfig } from 'src/config/app.config';
 
 type ApiErrorResponse = ErrorResponseBody & {
   requestId?: string;
@@ -54,12 +57,16 @@ function normalizeMessageFromResponse(
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
+
+  constructor(
+    @Inject(appConfig.KEY)
+    private readonly config: ConfigType<typeof appConfig>,
+  ) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<Request>();
     const res = ctx.getResponse<Response>();
-
-    const isProd = process.env.NODE_ENV === 'production';
 
     const path = req.originalUrl;
     const timestamp = new Date().toISOString();
@@ -209,13 +216,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ok: false,
         code,
         message,
-        details: isProd ? undefined : details,
+        details: this.config.exposeErrorDetails ? details : undefined,
         requestId,
         path,
         timestamp,
       };
 
-      if (isProd) delete body.details;
+      if (!this.config.exposeErrorDetails) delete body.details;
 
       return res.status(statusCode).json(body);
     }

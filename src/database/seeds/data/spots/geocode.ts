@@ -1,14 +1,7 @@
-import * as dotenv from 'dotenv';
 import path from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
+import { getEnvironment } from 'src/config/environment';
 import { spots } from './index';
-
-dotenv.config({
-  path:
-    process.env.NODE_ENV === 'production'
-      ? '.env.production'
-      : '.env.development',
-});
 
 type GeoRow = { lat: number; lng: number; address: string };
 type GeoMap = Record<string, Record<string, GeoRow>>;
@@ -22,8 +15,7 @@ interface KakaoAddressResponse {
   documents: KakaoAddressDocument[];
 }
 
-const KEY = process.env.KAKAO_CLIENT_ID;
-if (!KEY) throw new Error('KAKAO_CLIENT_ID missing');
+const KEY = getEnvironment().KAKAO_CLIENT_ID;
 
 const OUT_PATH = path.join(__dirname, 'geo.json');
 
