@@ -8,7 +8,7 @@ import { ConfigModule, type ConfigType } from '@nestjs/config';
 import { SpotsModule } from 'src/modules/spots/spots.module';
 import { PostsModule } from 'src/modules/posts/posts.module';
 import { TagsModule } from 'src/modules/tags/tags.module';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { seconds, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerCustomGuard } from './common/guards/throttler.guard';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { HealthModule } from 'src/modules/health/health.module';
@@ -57,17 +57,17 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 60,
+        ttl: seconds(60),
         limit: 200,
       },
       {
         name: 'auth',
-        ttl: 60,
+        ttl: seconds(60),
         limit: 10,
       },
       {
         name: 'post',
-        ttl: 10,
+        ttl: seconds(10),
         limit: 10,
       },
     ]),

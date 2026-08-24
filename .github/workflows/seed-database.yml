@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: seed-${{ inputs.environment }}
+  group: database-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:

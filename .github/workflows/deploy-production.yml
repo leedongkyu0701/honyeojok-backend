@@ -6,7 +6,7 @@ on:
       - main
 
 concurrency:
-  group: deploy-production
+  group: database-production
   cancel-in-progress: false
 
 permissions:

@@ -18,7 +18,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthProvider } from 'src/modules/auth/enums/auth-provider.enum';
 import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
 import { SocialLoginInput } from './types/social-login.input';
-import { Throttle } from '@nestjs/throttler';
+import { seconds, Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -37,7 +37,7 @@ interface CookieRequest extends Request {
 }
 
 @ApiTags('Auth')
-@Throttle({ auth: { ttl: 60, limit: 10 } })
+@Throttle({ auth: { ttl: seconds(60), limit: 10 } })
 @Controller('auth')
 export class AuthController {
   constructor(

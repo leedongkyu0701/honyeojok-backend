@@ -11,7 +11,7 @@ import { DestinationsService } from './destinations.service';
 import { CreateDestinationRequestDto } from './dto/request/create-destination.request.dto';
 import { FindDestinationsQuery } from './dto/query/find-destinations.query.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { seconds, Throttle } from '@nestjs/throttler';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { JwtAccessGuard } from 'src/modules/auth/guards/jwt-access.guard';
 import { RoleGuard } from 'src/modules/auth/guards/role.guard';
@@ -52,7 +52,7 @@ export class DestinationsController {
   }
 
   @Get('search')
-  @Throttle({ default: { ttl: 60, limit: 20 } })
+  @Throttle({ default: { ttl: seconds(60), limit: 20 } })
   @ApiOperation({ summary: '여행지 검색' })
   search(@Query('q') query: string) {
     return this.service.search(query);

@@ -6,7 +6,7 @@ on:
       - develop
 
 concurrency:
-  group: deploy-staging
+  group: database-staging
   cancel-in-progress: false
 
 permissions:
