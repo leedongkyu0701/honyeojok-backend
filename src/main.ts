@@ -16,7 +16,7 @@ async function bootstrap() {
   const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
-  expressApp.set('trust proxy', config.trustProxyHops);
+  expressApp.set('trust proxy', config.trustProxy);
   expressApp.disable('x-powered-by');
   app.enableShutdownHooks();
 

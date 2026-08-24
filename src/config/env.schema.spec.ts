@@ -6,7 +6,7 @@ const validLocalEnvironment: Record<string, string> = {
   PORT: '5001',
   FRONTEND_BASE_URL: 'http://localhost:3000',
   CORS_ORIGINS: 'http://localhost:3000',
-  TRUST_PROXY_HOPS: '0',
+  TRUST_PROXY: 'false',
   SWAGGER_ENABLED: 'true',
   EXPOSE_ERROR_DETAILS: 'true',
   LOG_LEVEL: 'debug',
@@ -52,6 +52,7 @@ describe('environment schema', () => {
     expect(parsed.NODE_ENV).toBe('development');
     expect(parsed.APP_ENV).toBe('local');
     expect(parsed.PORT).toBe(5001);
+    expect(parsed.TRUST_PROXY).toBe(false);
     expect(parsed.DB_SSL).toBe(false);
   });
 
@@ -101,6 +102,7 @@ describe('environment schema', () => {
       environment({
         SWAGGER_ENABLED: 'false',
         EXPOSE_ERROR_DETAILS: 'false',
+        TRUST_PROXY: 'false',
         LOG_PRETTY: 'false',
         DB_SSL: 'false',
         IMAGE_UPLOAD_ENABLED: 'false',
@@ -109,9 +111,22 @@ describe('environment schema', () => {
     );
 
     expect(parsed.SWAGGER_ENABLED).toBe(false);
+    expect(parsed.TRUST_PROXY).toBe(false);
     expect(parsed.DB_SSL).toBe(false);
     expect(parsed.IMAGE_UPLOAD_ENABLED).toBe(false);
     expect(parsed.SENTRY_ENABLED).toBe(false);
+  });
+
+  it('parses TRUST_PROXY=true as boolean true', () => {
+    const parsed = parseEnvironment(environment({ TRUST_PROXY: 'true' }));
+
+    expect(parsed.TRUST_PROXY).toBe(true);
+  });
+
+  it.each(['1', 'yes'])('rejects an invalid TRUST_PROXY value: %s', (value) => {
+    expect(() => parseEnvironment(environment({ TRUST_PROXY: value }))).toThrow(
+      'Invalid environment configuration',
+    );
   });
 
   it('requires every R2 value when uploads are enabled', () => {

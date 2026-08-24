@@ -139,6 +139,8 @@ cp .env.example .env.local
 
 `IMAGE_UPLOAD_ENABLED=false`면 R2 값은 필요하지 않습니다. `true`일 때는 R2 값 전체가 필요합니다. 배포 Development/Staging/Production 환경은 `.env.*` 파일이 아니라 Docker, CI 또는 cloud runtime의 environment/secret injection으로 값을 주입합니다.
 
+`TRUST_PROXY`는 Express가 reverse proxy 뒤의 `X-Forwarded-For`, `X-Forwarded-Proto` 등 forwarded 정보를 신뢰할지 결정하는 boolean 설정입니다. Local에서는 `TRUST_PROXY=false`를 사용하고, Render Staging/Production에서는 `TRUST_PROXY=true`를 사용합니다.
+
 ### 서버 실행
 
 ```bash

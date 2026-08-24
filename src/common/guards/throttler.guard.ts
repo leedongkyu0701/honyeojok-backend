@@ -22,6 +22,8 @@ export class ThrottlerCustomGuard extends ThrottlerGuard {
     //   return Promise.resolve(`ip-${xff.split(',')[0].trim()}`);
     // }
 
+    // req.ip follows Express's trust proxy setting, so it uses forwarded client
+    // information only when TRUST_PROXY=true.
     return Promise.resolve(`ip-${req.ip}`);
   }
 }

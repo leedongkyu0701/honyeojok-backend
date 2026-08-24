@@ -10,7 +10,7 @@ export const appConfig = registerAs('app', () => {
     port: env.PORT,
     frontendBaseUrl: env.FRONTEND_BASE_URL,
     corsOrigins: env.CORS_ORIGINS,
-    trustProxyHops: env.TRUST_PROXY_HOPS,
+    trustProxy: env.TRUST_PROXY,
     swaggerEnabled: env.SWAGGER_ENABLED,
     exposeErrorDetails: env.EXPOSE_ERROR_DETAILS,
   };

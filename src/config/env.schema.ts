@@ -65,10 +65,7 @@ export const envSchema = z
 
     FRONTEND_BASE_URL: origin,
     CORS_ORIGINS: corsOrigins,
-    TRUST_PROXY_HOPS: numberFromEnvironment(
-      'TRUST_PROXY_HOPS',
-      z.number().int().min(0),
-    ),
+    TRUST_PROXY: booleanFromEnvironment,
     SWAGGER_ENABLED: booleanFromEnvironment,
     EXPOSE_ERROR_DETAILS: booleanFromEnvironment,
 
