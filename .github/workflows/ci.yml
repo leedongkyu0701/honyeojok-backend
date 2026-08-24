@@ -1,0 +1,64 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality-and-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: honyeojok_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d honyeojok_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality checks
+        run: npm run check
+
+      - name: Run migrations against an empty PostgreSQL database
+        env:
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: honyeojok_ci
+          DB_SSL: 'false'
+        run: npm run migration:run:deploy
+
+      - name: Show migration status
+        env:
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: honyeojok_ci
+          DB_SSL: 'false'
+        run: npm run migration:show:deploy
