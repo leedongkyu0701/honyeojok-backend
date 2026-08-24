@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import type { DataSourceOptions } from 'typeorm';
-import { getEnvironment } from './environment';
+import { getDatabaseEnvironment } from './environment';
 
 export type DatabaseConfiguration = {
   host: string;
@@ -13,7 +13,7 @@ export type DatabaseConfiguration = {
 };
 
 export function createDatabaseConfiguration(): DatabaseConfiguration {
-  const env = getEnvironment();
+  const env = getDatabaseEnvironment();
 
   return {
     host: env.DB_HOST,
@@ -42,6 +42,7 @@ export function createDatabaseConnectionOptions(
     database: config.database,
     ssl: config.ssl ? { rejectUnauthorized: false } : false,
     synchronize: false,
+    dropSchema: false,
     extra: {
       max: 5,
       idleTimeoutMillis: 30000,
