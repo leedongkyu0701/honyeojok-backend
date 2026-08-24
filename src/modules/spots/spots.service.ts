@@ -16,6 +16,7 @@ import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import type { GeoPoint } from 'src/modules/spots/types/geo-point.type';
 import { SpotMapResponseDto } from './dto/response/spot-map.response.dto';
+import { SpotMapper } from './mappers/spot.mapper';
 
 type FindNearbyByPointsArgs = {
   destinationId: number;
@@ -34,63 +35,6 @@ export class SpotsService {
     @InjectRepository(Destination)
     private readonly destRepo: Repository<Destination>,
   ) {}
-
-  private toCard(spot: Spot): SpotCardResponseDto {
-    return {
-      id: spot.id,
-      slug: spot.slug,
-      name: spot.name,
-      summary: spot.summary,
-      lat: spot.lat ?? null,
-      lng: spot.lng ?? null,
-      category: spot.category ?? SpotCategory.ETC,
-      imageUrl: spot.imageUrl ?? null,
-      tags: (spot.tags ?? []).map((t) => ({
-        slug: t.slug,
-        label: t.label,
-        id: t.id,
-      })),
-      destination: {
-        id: spot.destination.id,
-        slug: spot.destination.slug,
-        name: spot.destination.name,
-      },
-    };
-  }
-
-  private toDetail(spot: Spot): SpotDetailResponseDto {
-    return {
-      id: spot.id,
-      slug: spot.slug,
-      name: spot.name,
-      category: spot.category ?? SpotCategory.ETC,
-      lat: spot.lat ?? null,
-      lng: spot.lng ?? null,
-
-      description: spot.description,
-      summary: spot.summary,
-      honyeoTip: spot.honyeoTip ?? null,
-
-      imageUrl: spot.imageUrl ?? null,
-      imageSource: spot.imageSource ?? null,
-      imageCredit: spot.imageCredit ?? null,
-
-      address: spot.address ?? null,
-      externalUrl: spot.externalUrl ?? null,
-
-      tags: (spot.tags ?? []).map((t) => ({
-        slug: t.slug,
-        label: t.label,
-        id: t.id,
-      })),
-
-      destination: {
-        id: spot.destination.id,
-        slug: spot.destination.slug,
-        name: spot.destination.name,
-      },
-    };
-  }
 
   async findByQuery(
     query: FindSpotsQuery,
@@ -128,7 +72,7 @@ export class SpotsService {
 
     return {
       totalPages,
-      data: spots.map((s) => this.toCard(s)),
+      data: spots.map((spot) => SpotMapper.toCard(spot)),
     };
   }
 
@@ -151,7 +95,10 @@ export class SpotsService {
           take: takePerCategory,
         });
 
-        return [category, spots.map((s) => this.toCard(s))] as const;
+        return [
+          category,
+          spots.map((spot) => SpotMapper.toCard(spot)),
+        ] as const;
       }),
     );
 
@@ -184,7 +131,7 @@ export class SpotsService {
       take: 50, // 추천 스팟을 내려주고 프론트에서 랜덤하게 10개정도 뽑아 사용하는 정책
     });
 
-    return spots.map((s) => this.toCard(s));
+    return spots.map((spot) => SpotMapper.toCard(spot));
   }
 
   async findById(id: number): Promise<SpotDetailResponseDto> {
@@ -204,7 +151,7 @@ export class SpotsService {
       );
     }
 
-    return this.toDetail(spot);
+    return SpotMapper.toDetail(spot);
   }
 
   async findNearbyByPoints(args: FindNearbyByPointsArgs) {

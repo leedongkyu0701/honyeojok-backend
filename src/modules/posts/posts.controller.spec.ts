@@ -3,6 +3,9 @@ import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
 import { JwtAccessGuard } from 'src/modules/auth/guards/jwt-access.guard';
 import { JwtOptionalGuard } from 'src/modules/auth/guards/jwt-optional.guard';
+import { PostsQueryService } from './posts-query.service';
+import { CommentsService } from './comments/comments.service';
+import { PostLikesService } from './likes/post-likes.service';
 
 describe('PostsController', () => {
   let controller: PostsController;
@@ -12,6 +15,9 @@ describe('PostsController', () => {
       controllers: [PostsController],
       providers: [
         { provide: PostsService, useValue: {} },
+        { provide: PostsQueryService, useValue: {} },
+        { provide: CommentsService, useValue: {} },
+        { provide: PostLikesService, useValue: {} },
         { provide: JwtAccessGuard, useValue: { canActivate: jest.fn() } },
         { provide: JwtOptionalGuard, useValue: { canActivate: jest.fn() } },
       ],
