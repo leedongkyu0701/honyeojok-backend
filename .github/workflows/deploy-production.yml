@@ -1,0 +1,80 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality checks and build
+        run: npm run check
+
+      - name: Show current production migration status
+        env:
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT }}
+          DB_USER: ${{ vars.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ vars.DB_NAME }}
+          DB_SSL: ${{ vars.DB_SSL }}
+        run: npm run migration:show:deploy
+
+      - name: Run production migrations
+        env:
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT }}
+          DB_USER: ${{ vars.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ vars.DB_NAME }}
+          DB_SSL: ${{ vars.DB_SSL }}
+        run: npm run migration:run:deploy
+
+      - name: Show final production migration status
+        env:
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT }}
+          DB_USER: ${{ vars.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ vars.DB_NAME }}
+          DB_SSL: ${{ vars.DB_SSL }}
+        run: npm run migration:show:deploy
+
+      - name: Trigger Render Production deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [[ "$RENDER_DEPLOY_HOOK_URL" == *'?' || "$RENDER_DEPLOY_HOOK_URL" == *'&' ]]; then
+            separator=''
+          elif [[ "$RENDER_DEPLOY_HOOK_URL" == *'?'* ]]; then
+            separator='&'
+          else
+            separator='?'
+          fi
+
+          curl --fail --silent --show-error --output /dev/null \
+            --request POST \
+            "${RENDER_DEPLOY_HOOK_URL}${separator}ref=${GITHUB_SHA}"
