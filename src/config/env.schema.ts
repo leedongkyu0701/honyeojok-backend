@@ -57,6 +57,15 @@ const corsOrigins = z
   .pipe(z.array(origin).min(1))
   .transform((origins) => [...new Set(origins)]);
 
+export const databaseEnvSchema = z.object({
+  DB_HOST: requiredString,
+  DB_PORT: portFromEnvironment('DB_PORT'),
+  DB_USER: requiredString,
+  DB_PASSWORD: requiredString,
+  DB_NAME: requiredString,
+  DB_SSL: booleanFromEnvironment,
+});
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']),
@@ -80,12 +89,7 @@ export const envSchema = z
     ]),
     LOG_PRETTY: booleanFromEnvironment,
 
-    DB_HOST: requiredString,
-    DB_PORT: portFromEnvironment('DB_PORT'),
-    DB_USER: requiredString,
-    DB_PASSWORD: requiredString,
-    DB_NAME: requiredString,
-    DB_SSL: booleanFromEnvironment,
+    ...databaseEnvSchema.shape,
 
     JWT_ACCESS_SECRET_KEY: requiredString.min(32),
     JWT_REFRESH_SECRET_KEY: requiredString.min(32),
@@ -179,3 +183,8 @@ export const envSchema = z
   });
 
 export type EnvironmentVariables = z.infer<typeof envSchema>;
+
+export type DatabaseEnvironmentVariables = Pick<
+  EnvironmentVariables,
+  keyof typeof databaseEnvSchema.shape
+>;
