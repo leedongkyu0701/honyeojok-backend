@@ -31,7 +31,8 @@
     "migration:run:deploy": "npm run typeorm:deploy -- migration:run -d dist/data-source.js",
     "migration:revert:deploy": "npm run typeorm:deploy -- migration:revert -d dist/data-source.js",
     "migration:show:deploy": "npm run typeorm:deploy -- migration:show -d dist/data-source.js",
-    "seed:local": "cross-env NODE_ENV=development APP_ENV=local node --env-file=.env.local -r ts-node/register -r tsconfig-paths/register src/database/seeds/seed.ts",
+    "seed:local": "cross-env NODE_ENV=development APP_ENV=local node --env-file=.env.local -r ts-node/register -r tsconfig-paths/register src/database/seeds/seed.local.ts",
+    "seed:deploy": "node dist/database/seeds/seed.deploy.js",
     "geocode:local": "cross-env NODE_ENV=development APP_ENV=local node --env-file=.env.local -r ts-node/register -r tsconfig-paths/register src/database/seeds/data/spots/geocode.ts",
     "check": "npm run format:check && npm run lint && npm run test && npm run build"
   },

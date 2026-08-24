@@ -1,13 +1,9 @@
 import { AppDataSource } from 'src/data-source';
-import { getEnvironment } from 'src/config/environment';
 import { runSeed } from './seed-runner';
+import { assertLocalSeedEnvironment } from './seed-environment';
 
 async function main() {
-  const environment = getEnvironment();
-
-  if (environment.APP_ENV !== 'local') {
-    throw new Error('Development seed can only run with APP_ENV=local');
-  }
+  assertLocalSeedEnvironment(process.env.APP_ENV);
 
   console.log('🚀 Starting seed...');
   await AppDataSource.initialize();
@@ -19,7 +15,7 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error('❌ Seed failed', e);
+main().catch((error) => {
+  console.error('❌ Seed failed', error);
   process.exit(1);
 });
