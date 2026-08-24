@@ -1,10 +1,11 @@
-import { Controller, Get, Patch, UseGuards, Query, Body } from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { JwtAccessGuard } from 'src/modules/auth/guards/jwt-access.guard';
 import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
-import { PaginationQueryDto } from './dto/query/pagination.query.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UpdateNicknameRequestDto } from './dto/request/update-nickname.request.dto';
+import { UserProfileResponseDto } from './dto/response/user-profile.response.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -15,7 +16,7 @@ export class UsersController {
   @Get('me')
   @ApiOperation({ summary: '내 프로필 조회' })
   @ApiBearerAuth('access-token')
-  getProfile(@CurrentUser() user: JwtUser) {
+  getProfile(@CurrentUser() user: JwtUser): Promise<UserProfileResponseDto> {
     return this.userService.getProfile(user.id);
   }
 
@@ -25,30 +26,8 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   async updateNickname(
     @CurrentUser() user: JwtUser,
-    @Body('nickName') newNickName: string,
-  ) {
-    return this.userService.updateNickName(user.id, newNickName);
-  }
-
-  @UseGuards(JwtAccessGuard)
-  @Get('me/posts')
-  @ApiOperation({ summary: '내 게시글 목록 조회' })
-  @ApiBearerAuth('access-token')
-  async getUserPosts(
-    @CurrentUser() user: JwtUser,
-    @Query() query: PaginationQueryDto,
-  ) {
-    return this.userService.getUserPosts(user.id, query.page, query.take);
-  }
-
-  @UseGuards(JwtAccessGuard)
-  @Get('me/bookmarks')
-  @ApiOperation({ summary: '내 북마크 목록 조회' })
-  @ApiBearerAuth('access-token')
-  async getUserBookmarks(
-    @CurrentUser() user: JwtUser,
-    @Query() query: PaginationQueryDto,
-  ) {
-    return this.userService.getUserBookmarks(user.id, query.page, query.take);
+    @Body() dto: UpdateNicknameRequestDto,
+  ): Promise<{ ok: true }> {
+    return this.userService.updateNickName(user.id, dto.nickName);
   }
 }

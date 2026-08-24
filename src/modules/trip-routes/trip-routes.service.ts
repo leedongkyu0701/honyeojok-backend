@@ -18,6 +18,7 @@ import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
 import type { GeoPoint } from 'src/modules/spots/types/geo-point.type';
 import { SpotsService } from 'src/modules/spots/spots.service';
+import { TripRouteMapper } from './mappers/trip-route.mapper';
 @Injectable()
 export class TripRoutesService {
   constructor(
@@ -43,15 +44,7 @@ export class TripRoutesService {
       relations: ['destination'],
       take: 6,
     });
-    return routes.map((route) => ({
-      id: route.id,
-      slug: route.slug,
-      title: route.title,
-      summary: route.summary,
-      days: route.days,
-      regionSlug: route.destination.slug,
-      bookmarkCount: route.bookmarkCount,
-    }));
+    return routes.map((route) => TripRouteMapper.toCard(route));
   }
 
   async findByRegion(region: string): Promise<TripRouteCardResponseDto[]> {
@@ -75,15 +68,7 @@ export class TripRoutesService {
       relations: ['destination'],
     });
 
-    return routes.map((route) => ({
-      id: route.id,
-      slug: route.slug,
-      title: route.title,
-      summary: route.summary,
-      days: route.days,
-      regionSlug: route.destination.slug,
-      bookmarkCount: route.bookmarkCount,
-    }));
+    return routes.map((route) => TripRouteMapper.toCard(route));
   }
 
   async findByRegionAndSlug(

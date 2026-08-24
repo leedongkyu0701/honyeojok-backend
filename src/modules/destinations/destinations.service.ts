@@ -16,6 +16,7 @@ import { TripRoute } from 'src/modules/trip-routes/entities/trip-route.entity';
 import { Spot } from 'src/modules/spots/entities/spot.entity';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
+import { DestinationMapper } from './mappers/destination.mapper';
 
 @Injectable()
 export class DestinationsService {
@@ -64,14 +65,7 @@ export class DestinationsService {
 
     return {
       totalPages,
-      data: rows.map((d) => ({
-        id: d.id,
-        slug: d.slug,
-        name: d.name,
-        score: d.score,
-        summary: d.summary,
-        imageUrl: d.imageUrl ?? null,
-      })),
+      data: rows.map((destination) => DestinationMapper.toCard(destination)),
     };
   }
 
@@ -83,26 +77,12 @@ export class DestinationsService {
         ErrorCode.RESOURCE_NOT_FOUND,
       );
     }
-    return {
-      id: d.id,
-      slug: d.slug,
-      name: d.name,
-      score: d.score,
-      summary: d.summary,
-      imageUrl: d.imageUrl ?? null,
-    };
+    return DestinationMapper.toCard(d);
   }
 
   async findRecommended(take = 6): Promise<DestinationCardResponseDto[]> {
     const rows = await this.repo.find({ order: { score: 'DESC' }, take });
-    return rows.map((d) => ({
-      id: d.id,
-      slug: d.slug,
-      name: d.name,
-      score: d.score,
-      summary: d.summary,
-      imageUrl: d.imageUrl ?? null,
-    }));
+    return rows.map((destination) => DestinationMapper.toCard(destination));
   }
 
   async findMap(): Promise<DestinationMapResponseDto[]> {

@@ -25,11 +25,22 @@ import { Throttle } from '@nestjs/throttler';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { JwtOptionalGuard } from 'src/modules/auth/guards/jwt-optional.guard';
+import { PostsQueryService } from './posts-query.service';
+import { CommentsService } from './comments/comments.service';
+import { PostLikesService } from './likes/post-likes.service';
+import { PostCardResponseDto } from './dto/response/post-card.response.dto';
+import { PostDetailResponseDto } from './dto/response/post-detail.response.dto';
+import { CommentResponseDto } from './dto/response/comment.response.dto';
 
 @ApiTags('Community')
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postService: PostsService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    private readonly postsQueryService: PostsQueryService,
+    private readonly commentsService: CommentsService,
+    private readonly postLikesService: PostLikesService,
+  ) {}
 
   @UseGuards(JwtAccessGuard)
   @Post()
@@ -59,27 +70,31 @@ export class PostsController {
     @Body()
     createPostDto: CreatePostRequestDto,
     @UploadedFiles() images?: Express.Multer.File[],
-  ) {
-    return this.postService.createPost(user.id, createPostDto, images);
+  ): Promise<PostCardResponseDto> {
+    return this.postsService.createPost(user.id, createPostDto, images);
   }
 
   @Get()
   @ApiOperation({ summary: '게시글 목록 조회' })
-  findPosts(@Query() query: FindPostsQuery) {
-    return this.postService.findPosts(query);
+  findPosts(
+    @Query() query: FindPostsQuery,
+  ): Promise<{ posts: PostCardResponseDto[]; totalPages: number }> {
+    return this.postsQueryService.findPosts(query);
   }
 
   @Get('region/:regionSlug')
   @ApiOperation({ summary: '지역별 게시글 조회' })
-  findPostsByRegionSlug(@Param('regionSlug') regionSlug: string) {
-    return this.postService.findPostsByRegionSlug(regionSlug);
+  findPostsByRegionSlug(
+    @Param('regionSlug') regionSlug: string,
+  ): Promise<PostCardResponseDto[]> {
+    return this.postsQueryService.findPostsByRegionSlug(regionSlug);
   }
 
   @Get('best')
   @HttpCache({ maxAge: 60, sMaxAge: 300, swr: 300 })
   @ApiOperation({ summary: '베스트 게시글 조회' })
-  findBestPosts() {
-    return this.postService.findBestPosts();
+  findBestPosts(): Promise<PostCardResponseDto[]> {
+    return this.postsQueryService.findBestPosts();
   }
 
   @Get(':postId')
@@ -89,8 +104,8 @@ export class PostsController {
   getPostDetail(
     @Param('postId', ParseIntPipe) postId: number,
     @CurrentUser() user?: JwtUser,
-  ) {
-    return this.postService.findPostById(postId, user?.id);
+  ): Promise<PostDetailResponseDto> {
+    return this.postsQueryService.findPostById(postId, user?.id);
   }
 
   @Delete(':postId')
@@ -100,8 +115,8 @@ export class PostsController {
   deletePost(
     @CurrentUser() user: JwtUser,
     @Param('postId', ParseIntPipe) postId: number,
-  ) {
-    return this.postService.deletePost(user.id, postId);
+  ): Promise<void> {
+    return this.postsService.deletePost(user.id, postId);
   }
 
   @Post(':postId/view')
@@ -109,8 +124,10 @@ export class PostsController {
   @ApiOperation({ summary: '게시글 조회수 증가' })
   @ApiBearerAuth('access-token')
   @Throttle({ post: { ttl: 10, limit: 10 } })
-  incrementViewCount(@Param('postId', ParseIntPipe) postId: number) {
-    return this.postService.incrementViewCount(postId);
+  incrementViewCount(
+    @Param('postId', ParseIntPipe) postId: number,
+  ): Promise<void> {
+    return this.postsService.incrementViewCount(postId);
   }
 
   @UseGuards(JwtAccessGuard)
@@ -121,8 +138,8 @@ export class PostsController {
   toggleLikePost(
     @CurrentUser() user: JwtUser,
     @Param('postId', ParseIntPipe) postId: number,
-  ) {
-    return this.postService.toggleLikePost(user.id, postId);
+  ): Promise<{ likeCount: number; liked: boolean }> {
+    return this.postLikesService.toggleLikePost(user.id, postId);
   }
 
   // comment 관련 API
@@ -136,14 +153,20 @@ export class PostsController {
     @CurrentUser() user: JwtUser,
     @Param('postId', ParseIntPipe) postId: number,
     @Body() createCommentDto: CreateCommentRequestDto,
-  ) {
-    return this.postService.createComment(user.id, postId, createCommentDto);
+  ): Promise<CommentResponseDto> {
+    return this.commentsService.createComment(
+      user.id,
+      postId,
+      createCommentDto,
+    );
   }
 
   @Get(':postId/comments')
   @ApiOperation({ summary: '댓글 목록 조회' })
-  getCommentsByPost(@Param('postId', ParseIntPipe) postId: number) {
-    return this.postService.getCommentsByPost(postId);
+  getCommentsByPost(
+    @Param('postId', ParseIntPipe) postId: number,
+  ): Promise<CommentResponseDto[]> {
+    return this.commentsService.getCommentsByPost(postId);
   }
 
   @UseGuards(JwtAccessGuard)
@@ -153,7 +176,7 @@ export class PostsController {
   deleteComment(
     @CurrentUser() user: JwtUser,
     @Param('commentId', ParseIntPipe) commentId: number,
-  ) {
-    return this.postService.deleteComment(user.id, commentId);
+  ): Promise<{ ok: true }> {
+    return this.commentsService.deleteComment(user.id, commentId);
   }
 }

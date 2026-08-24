@@ -9,7 +9,8 @@ import { User } from 'src/modules/users/entities/user.entity';
 import { TripRouteDay } from './entities/trip-route-day.entity';
 import { TripRouteItem } from './entities/trip-route-item.entity';
 import { SpotsModule } from 'src/modules/spots/spots.module';
-import { AuthModule } from 'src/modules/auth/auth.module';
+import { BookmarksQueryService } from './bookmarks-query.service';
+import { UserBookmarksController } from './user-bookmarks.controller';
 
 @Module({
   imports: [
@@ -22,10 +23,9 @@ import { AuthModule } from 'src/modules/auth/auth.module';
       TripRouteItem,
     ]),
     SpotsModule,
-    AuthModule,
   ],
 
-  providers: [TripRoutesService],
-  controllers: [TripRoutesController],
+  providers: [TripRoutesService, BookmarksQueryService],
+  controllers: [TripRoutesController, UserBookmarksController],
 })
 export class TripRoutesModule {}

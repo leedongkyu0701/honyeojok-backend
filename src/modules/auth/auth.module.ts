@@ -26,7 +26,6 @@ import { JwtOptionalGuard } from './guards/jwt-optional.guard';
   ],
   controllers: [AuthController],
   exports: [
-    AuthService,
     JwtAccessGuard,
     JwtRefreshGuard,
     JwtOptionalGuard,
