@@ -42,6 +42,7 @@ export function createDatabaseConnectionOptions(
     database: config.database,
     ssl: config.ssl ? { rejectUnauthorized: false } : false,
     synchronize: false,
+    dropSchema: false,
     extra: {
       max: 5,
       idleTimeoutMillis: 30000,
