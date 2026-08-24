@@ -37,7 +37,7 @@ interface CookieRequest extends Request {
 }
 
 @ApiTags('Auth')
-@Throttle({ auth: { ttl: seconds(60), limit: 10 } })
+@Throttle({ default: { ttl: seconds(60), limit: 10 } })
 @Controller('auth')
 export class AuthController {
   constructor(

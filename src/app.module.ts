@@ -60,16 +60,6 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
         ttl: seconds(60),
         limit: 200,
       },
-      {
-        name: 'auth',
-        ttl: seconds(60),
-        limit: 10,
-      },
-      {
-        name: 'post',
-        ttl: seconds(10),
-        limit: 10,
-      },
     ]),
     DestinationsModule,
     TripRoutesModule,

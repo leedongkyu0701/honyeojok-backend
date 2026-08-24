@@ -46,7 +46,7 @@ export class PostsController {
   @Post()
   @ApiOperation({ summary: '게시글 작성' })
   @ApiBearerAuth('access-token')
-  @Throttle({ post: { ttl: seconds(10), limit: 10 } })
+  @Throttle({ default: { ttl: seconds(10), limit: 10 } })
   @UseInterceptors(
     FilesInterceptor('image', 5, {
       limits: { fileSize: 7 * 1024 * 1024 }, // 7MB
@@ -123,7 +123,7 @@ export class PostsController {
   @UseGuards(JwtOptionalGuard)
   @ApiOperation({ summary: '게시글 조회수 증가' })
   @ApiBearerAuth('access-token')
-  @Throttle({ post: { ttl: seconds(10), limit: 10 } })
+  @Throttle({ default: { ttl: seconds(10), limit: 10 } })
   incrementViewCount(
     @Param('postId', ParseIntPipe) postId: number,
   ): Promise<void> {
@@ -134,7 +134,7 @@ export class PostsController {
   @Post(':postId/like')
   @ApiOperation({ summary: '게시글 좋아요 토글' })
   @ApiBearerAuth('access-token')
-  @Throttle({ post: { ttl: seconds(10), limit: 10 } })
+  @Throttle({ default: { ttl: seconds(10), limit: 10 } })
   toggleLikePost(
     @CurrentUser() user: JwtUser,
     @Param('postId', ParseIntPipe) postId: number,
@@ -148,7 +148,7 @@ export class PostsController {
   @Post(':postId/comments')
   @ApiOperation({ summary: '댓글 작성' })
   @ApiBearerAuth('access-token')
-  @Throttle({ post: { ttl: seconds(10), limit: 10 } })
+  @Throttle({ default: { ttl: seconds(10), limit: 10 } })
   createComment(
     @CurrentUser() user: JwtUser,
     @Param('postId', ParseIntPipe) postId: number,
