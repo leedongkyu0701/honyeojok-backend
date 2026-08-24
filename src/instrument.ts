@@ -1,9 +1,12 @@
 import * as Sentry from '@sentry/nestjs';
+import { getEnvironment } from './config/environment';
+
+const environment = getEnvironment();
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.APP_ENV,
-  enabled: process.env.NODE_ENV === 'production',
-  tracesSampleRate: 0.05,
+  dsn: environment.SENTRY_DSN,
+  environment: environment.APP_ENV,
+  enabled: environment.SENTRY_ENABLED,
+  tracesSampleRate: environment.SENTRY_TRACES_SAMPLE_RATE,
   sendDefaultPii: false,
 });

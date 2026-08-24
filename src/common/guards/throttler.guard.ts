@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
-// import { JwtUser } from 'src/types/user';
+// import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
 
 @Injectable()
 export class ThrottlerCustomGuard extends ThrottlerGuard {
@@ -22,6 +22,8 @@ export class ThrottlerCustomGuard extends ThrottlerGuard {
     //   return Promise.resolve(`ip-${xff.split(',')[0].trim()}`);
     // }
 
+    // req.ip follows Express's trust proxy setting, so it uses forwarded client
+    // information only when TRUST_PROXY=true.
     return Promise.resolve(`ip-${req.ip}`);
   }
 }

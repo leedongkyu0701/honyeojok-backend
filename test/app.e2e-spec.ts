@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { HealthModule } from '../src/health/health.module';
+import { HealthModule } from 'src/modules/health/health.module';
 
 function isHealthResponse(
   value: unknown,

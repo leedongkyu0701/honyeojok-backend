@@ -83,18 +83,22 @@ NestJS Throttler로 기본·인증·게시글 요청을 제한합니다. Pino가
 
 ```text
 src/
-├── auth
-├── destinations
-├── spots
-├── trip-routes
-├── posts
-├── user
-├── tags
-├── health
+├── config                 # 환경 검증과 typed configuration
 ├── common
-├── migrations
-├── seed
+├── database               # migrations, seeds, data source
+├── infrastructure         # R2 등 외부 인프라 연동
+├── modules
+│   ├── auth
+│   ├── destinations
+│   ├── health
+│   ├── posts
+│   ├── spots
+│   ├── tags
+│   ├── trip-routes
+│   └── users
 ├── app.module.ts
+├── data-source.ts
+├── instrument.ts
 └── main.ts
 ```
 
@@ -102,7 +106,7 @@ src/
 
 ### 요구 환경
 
-- Node.js 20 이상
+- Node.js 24.x (`.nvmrc` 기준)
 - PostgreSQL
 
 ### 설치
@@ -115,13 +119,27 @@ npm install
 
 ### 환경 변수
 
-`.env.example`을 복사하여 개발 환경 파일을 생성한 뒤, OAuth·JWT·데이터베이스 값 등 비어 있는 값을 채웁니다.
+`.env.example`을 `.env.local`로 복사하고 OAuth·JWT·데이터베이스 값 등 비어 있는 값을 채웁니다. `.env.local`과 `.env.test`는 git에 포함하지 않습니다.
 
 ```bash
-cp .env.example .env.development
+cp .env.example .env.local
 ```
 
-`IMAGE_UPLOAD_ENABLED=false`로 두면 R2 설정 없이 이미지 업로드를 비활성화할 수 있습니다.
+`NODE_ENV`는 Node runtime 모드이며 `development`, `test`, `production`만 사용합니다. `APP_ENV`는 배포 stage이며 `local`, `development`, `staging`, `production`, `test`를 사용합니다. 유효한 조합은 다음과 같습니다.
+
+| 용도 | NODE_ENV | APP_ENV |
+| --- | --- | --- |
+| Local | `development` | `local` |
+| Test | `test` | `test` |
+| Development 서버 | `production` | `development` |
+| Staging | `production` | `staging` |
+| Production | `production` | `production` |
+
+기능 정책은 `NODE_ENV`로 추론하지 않습니다. Swagger, 상세 오류, DB TLS, cookie 보안, 로그 형식, 이미지 업로드, Sentry는 각각의 명시적 환경변수로 설정합니다. 시작 시 Zod schema가 모든 필수값과 R2/Sentry/cookie/CORS의 상호 조건을 검증하므로, 잘못된 설정은 요청 처리 전에 실패합니다.
+
+`IMAGE_UPLOAD_ENABLED=false`면 R2 값은 필요하지 않습니다. `true`일 때는 R2 값 전체가 필요합니다. 배포 Development/Staging/Production 환경은 `.env.*` 파일이 아니라 Docker, CI 또는 cloud runtime의 environment/secret injection으로 값을 주입합니다.
+
+`TRUST_PROXY`는 Express가 reverse proxy 뒤의 `X-Forwarded-For`, `X-Forwarded-Proto` 등 forwarded 정보를 신뢰할지 결정하는 boolean 설정입니다. Local에서는 `TRUST_PROXY=false`를 사용하고, Render Staging/Production에서는 `TRUST_PROXY=true`를 사용합니다.
 
 ### 서버 실행
 
@@ -131,7 +149,7 @@ npm run start:dev
 
 ### Swagger
 
-개발 환경에서는 `http://localhost:5001/docs`에서 Swagger UI에 접근할 수 있습니다. 운영 환경에서는 Swagger를 노출하지 않습니다.
+`SWAGGER_ENABLED=true`이면 `http://localhost:5001/docs`에서 Swagger UI에 접근할 수 있습니다.
 
 ## 주요 명령어
 
@@ -139,14 +157,21 @@ npm run start:dev
 | --- | --- |
 | 빌드 | `npm run build` |
 | 서버 시작 | `npm run start` |
-| 개발 서버 | `npm run start:dev` |
-| 운영 서버 | `npm run start:prod` |
+| Local 서버 | `npm run start:dev` |
+| 배포 artifact 서버 | `npm run start:prod` |
 | 린트 | `npm run lint` |
+| 린트 자동 수정 | `npm run lint:fix` |
+| 포맷 확인 | `npm run format:check` |
+| 포맷 적용 | `npm run format` |
 | 단위 테스트 | `npm run test` |
 | E2E 테스트 | `npm run test:e2e` |
-| 개발 마이그레이션 실행 | `npm run migration:run:dev` |
-| 개발 마이그레이션 되돌리기 | `npm run migration:revert:dev` |
-| 개발 시드 실행 | `npm run seed:dev` |
+| Local migration 생성 | `npm run migration:generate -- src/database/migrations/<name>` |
+| Local migration 실행 | `npm run migration:run:local` |
+| Local migration 되돌리기 | `npm run migration:revert:local` |
+| 배포 migration 실행 | `npm run migration:run:deploy` |
+| Local 개발 seed | `npm run seed:local` |
+
+Migration은 entity 변경 뒤 local DB에서 생성하고, migration 코드 검토 후 staging과 production에서는 build artifact에 대해 실행합니다. Production DB를 기준으로 migration을 생성하거나 개발 seed를 production에서 실행하지 않습니다.
 
 ## 개발자
 

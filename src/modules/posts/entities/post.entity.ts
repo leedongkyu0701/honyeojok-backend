@@ -1,0 +1,92 @@
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+  Index,
+  JoinColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { User } from 'src/modules/users/entities/user.entity';
+import { PostImage } from './post-image.entity';
+import { Comment } from './comment.entity';
+import { Destination } from 'src/modules/destinations/entities/destination.entity';
+import { PostType } from '../enums/post-type.enum';
+import { PostLike } from './post-like.entity';
+
+@Index('IDX_posts_is_deleted_created_at', ['isDeleted', 'createdAt'])
+@Index('IDX_posts_user_id_is_deleted_created_at', [
+  'userId',
+  'isDeleted',
+  'createdAt',
+])
+@Entity('posts')
+export class Post {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  title: string;
+
+  @Column('text')
+  content: string;
+
+  @Column('float', { nullable: true })
+  rating?: number;
+
+  @Column({ nullable: true })
+  region?: string;
+
+  @Column({ type: 'enum', enum: PostType })
+  type: PostType;
+
+  @Column({ default: 0 })
+  likeCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  viewCount: number;
+
+  @Column({ nullable: true })
+  thumbnailUrl?: string;
+
+  @Column({ type: 'boolean', default: false })
+  isDeleted: boolean;
+
+  @Column()
+  userId: number;
+
+  @Column({ nullable: true })
+  destinationId?: number;
+
+  // 관계
+
+  @OneToMany(() => PostLike, (like) => like.post)
+  likes: PostLike[];
+
+  @ManyToOne(() => User, (user) => user.posts, {
+    onDelete: 'NO ACTION',
+  }) // 유저 탈퇴를 soft delete로 변경, 게시글은 남겨두되 작성자 정보는 '탈퇴한 혼여족'으로 표시
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @ManyToOne(() => Destination, (destination) => destination.posts, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'destinationId' })
+  destination?: Destination;
+
+  @OneToMany(() => PostImage, (image) => image.post)
+  images: PostImage[];
+
+  @OneToMany(() => Comment, (comment) => comment.post)
+  comments: Comment[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
