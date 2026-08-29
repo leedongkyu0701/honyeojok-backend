@@ -31,7 +31,6 @@ jobs:
     environment: ${{ inputs.environment }}
 
     env:
-      NODE_ENV: production
       APP_ENV: ${{ inputs.environment }}
 
       DB_HOST: ${{ vars.DB_HOST }}
@@ -45,6 +44,7 @@ jobs:
       - name: Validate seed target
         shell: bash
         env:
+          NODE_ENV: production
           TARGET_ENVIRONMENT: ${{ inputs.environment }}
           CONFIRMATION: ${{ inputs.confirmation }}
           REF_NAME: ${{ github.ref_name }}
