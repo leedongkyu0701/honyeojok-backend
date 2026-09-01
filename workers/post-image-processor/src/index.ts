@@ -85,6 +85,10 @@ async function processMessage(
 
   const original = await env.MEDIA_BUCKET.get(event.object.key);
   if (!original) {
+    if (isTerminalUploadStatus(processing.status)) {
+      return;
+    }
+    await finalizePermanentFailure(env, event, uploadId, 'ORIGINAL_NOT_FOUND');
     return;
   }
 
@@ -98,11 +102,7 @@ async function processMessage(
     return;
   }
 
-  if (
-    processing.status === 'READY' ||
-    processing.status === 'ATTACHED' ||
-    processing.status === 'FAILED'
-  ) {
+  if (isTerminalUploadStatus(processing.status)) {
     await env.MEDIA_BUCKET.delete(event.object.key);
     return;
   }
@@ -173,10 +173,7 @@ async function processMessage(
       height: existingHeight,
       processedSize: existing.size,
     });
-    if (callback.missing) {
-      await env.MEDIA_BUCKET.delete(processedKey);
-    }
-    await env.MEDIA_BUCKET.delete(event.object.key);
+    await finalizeReadyCallback(env, event.object.key, processedKey, callback);
     return;
   }
 
@@ -204,12 +201,7 @@ async function processMessage(
   const [processedInfoStream, processedStorageStream] = transformed
     .image()
     .tee();
-  let outputInfo: ImageInfo;
-  try {
-    outputInfo = await getRasterImageInfo(env, processedInfoStream);
-  } catch (error) {
-    throw error;
-  }
+  const outputInfo = await getRasterImageInfo(env, processedInfoStream);
 
   const processed = await env.MEDIA_BUCKET.put(
     processedKey,
@@ -233,10 +225,7 @@ async function processMessage(
     height: outputInfo.height,
     processedSize: processed.size,
   });
-  if (callback.missing) {
-    await env.MEDIA_BUCKET.delete(processedKey);
-  }
-  await env.MEDIA_BUCKET.delete(event.object.key);
+  await finalizeReadyCallback(env, event.object.key, processedKey, callback);
 
   console.info('Post image processing completed', {
     queueMessageId,
@@ -281,6 +270,28 @@ async function reportReady(
     status: 'READY',
     ...result,
   });
+}
+
+async function finalizeReadyCallback(
+  env: Env,
+  originalKey: string,
+  processedKey: string,
+  callback: BackendCallbackResult,
+): Promise<void> {
+  if (callback.missing || callback.status === 'FAILED') {
+    await env.MEDIA_BUCKET.delete(processedKey);
+    await env.MEDIA_BUCKET.delete(originalKey);
+    return;
+  }
+
+  if (callback.status === 'READY' || callback.status === 'ATTACHED') {
+    await env.MEDIA_BUCKET.delete(originalKey);
+    return;
+  }
+
+  throw new Error(
+    `Unexpected upload status after READY callback: ${callback.status ?? 'missing'}`,
+  );
 }
 
 async function callBackend(
@@ -333,6 +344,12 @@ function getBackendUploadStatus(
     default:
       return undefined;
   }
+}
+
+function isTerminalUploadStatus(
+  status: BackendUploadStatus | undefined,
+): boolean {
+  return status === 'READY' || status === 'ATTACHED' || status === 'FAILED';
 }
 
 async function getRasterImageInfo(

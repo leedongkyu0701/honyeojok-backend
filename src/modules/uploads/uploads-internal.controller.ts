@@ -7,11 +7,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { UpdateUploadProcessingResultRequestDto } from './dto/request/update-upload-processing-result.request.dto';
 import { MediaWorkerGuard } from './guards/media-worker.guard';
 import { UploadsService } from './uploads.service';
 
 @ApiExcludeController()
+@SkipThrottle()
 @UseGuards(MediaWorkerGuard)
 @Controller('internal/uploads')
 export class UploadsInternalController {

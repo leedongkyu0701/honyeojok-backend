@@ -28,6 +28,17 @@ const SUPPORTED_IMAGE_FORMATS = new Set([
   'webp',
 ]);
 
+export const PERMANENT_IMAGE_ERROR_CODES = new Set([
+  9412, // non-image input
+  9413, // image area exceeds the platform limit
+  9520, // unsupported image format
+  9523, // invalid image format can prevent resizing
+]);
+
+export const TRANSIENT_IMAGE_ERROR_CODES = new Set([
+  9424, 9516, 9517, 9518, 9522, 9529,
+]);
+
 type UnknownRecord = Record<string, unknown>;
 
 export type R2EventNotification = {
@@ -102,7 +113,9 @@ export function normalizeEtag(etag: string): string {
 
 export function isPermanentImageValidationError(error: unknown): boolean {
   if (!isRecord(error)) return false;
-  if (error.code === 9412) return true;
+  const code = typeof error.code === 'number' ? error.code : undefined;
+  if (code !== undefined && PERMANENT_IMAGE_ERROR_CODES.has(code)) return true;
+  if (code !== undefined && TRANSIENT_IMAGE_ERROR_CODES.has(code)) return false;
 
   const message =
     typeof error.message === 'string' ? error.message.toLowerCase() : '';

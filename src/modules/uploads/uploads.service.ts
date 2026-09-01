@@ -184,6 +184,7 @@ export class UploadsService {
       .createQueryBuilder('upload')
       .setLock('pessimistic_write')
       .where('upload.id IN (:...uploadIds)', { uploadIds })
+      .orderBy('upload.id', 'ASC')
       .getMany();
 
     if (uploads.length !== uploadIds.length) {
