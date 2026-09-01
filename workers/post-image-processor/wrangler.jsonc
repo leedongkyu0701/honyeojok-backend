@@ -3,6 +3,16 @@
   "name": "honyeojok-post-image-processor",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "preview_urls": false,
+
+  "vars": {
+    "BACKEND_API_BASE_URL": "https://test-honyeojok-back.onrender.com",
+
+    // 현재는 학습/테스트 용도로 하나의 R2 버킷과 Queue를 공용 사용한다.
+    // 실제 운영에서는 staging / production별로 URL, Queue, Worker, R2 bucket을 분리하는 것이 더 안전하다.
+    // production 배포 시 임시로 BACKEND_API_BASE_URL을 운영 Backend URL로 변경한다.
+  },
   "r2_buckets": [
     {
       "binding": "MEDIA_BUCKET",
