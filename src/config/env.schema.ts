@@ -112,6 +112,7 @@ export const envSchema = z
     R2_SECRET_ACCESS_KEY: optionalString,
     R2_BUCKET_NAME: optionalString,
     R2_PUBLIC_URL: optionalUrl,
+    MEDIA_WORKER_SECRET: optionalString,
 
     SENTRY_ENABLED: booleanFromEnvironment,
     SENTRY_DSN: optionalUrl,
@@ -160,6 +161,7 @@ export const envSchema = z
         'R2_SECRET_ACCESS_KEY',
         'R2_BUCKET_NAME',
         'R2_PUBLIC_URL',
+        'MEDIA_WORKER_SECRET',
       ] as const;
 
       for (const key of requiredR2Keys) {

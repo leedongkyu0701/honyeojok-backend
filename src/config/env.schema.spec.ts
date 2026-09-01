@@ -36,6 +36,7 @@ const validLocalEnvironment: Record<string, string> = {
   R2_SECRET_ACCESS_KEY: '',
   R2_BUCKET_NAME: '',
   R2_PUBLIC_URL: '',
+  MEDIA_WORKER_SECRET: '',
   SENTRY_ENABLED: 'false',
   SENTRY_DSN: '',
   SENTRY_TRACES_SAMPLE_RATE: '0.05',
@@ -151,6 +152,21 @@ describe('environment schema', () => {
         }),
       ),
     ).toThrow('R2_ACCESS_KEY_ID is required');
+  });
+
+  it('requires the media worker secret when uploads are enabled', () => {
+    expect(() =>
+      parseEnvironment(
+        environment({
+          IMAGE_UPLOAD_ENABLED: 'true',
+          R2_ACCOUNT_ID: 'account',
+          R2_ACCESS_KEY_ID: 'access-key',
+          R2_SECRET_ACCESS_KEY: 'secret-key',
+          R2_BUCKET_NAME: 'honyeo',
+          R2_PUBLIC_URL: 'https://cdn.honyeojok.com',
+        }),
+      ),
+    ).toThrow('MEDIA_WORKER_SECRET is required');
   });
 
   it('requires a Sentry DSN when Sentry is enabled', () => {

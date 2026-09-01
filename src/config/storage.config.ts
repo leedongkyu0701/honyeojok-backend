@@ -6,6 +6,7 @@ export const storageConfig = registerAs('storage', () => {
 
   return {
     imageUploadEnabled: env.IMAGE_UPLOAD_ENABLED,
+    mediaWorkerSecret: env.MEDIA_WORKER_SECRET,
     r2: {
       accountId: env.R2_ACCOUNT_ID,
       accessKeyId: env.R2_ACCESS_KEY_ID,

@@ -18,6 +18,7 @@
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
     "test": "cross-env NODE_ENV=test APP_ENV=test jest",
+    "test:typecheck": "tsc --noEmit -p tsconfig.test.json",
     "test:watch": "cross-env NODE_ENV=test APP_ENV=test jest --watch",
     "test:cov": "cross-env NODE_ENV=test APP_ENV=test jest --coverage",
     "test:debug": "cross-env NODE_ENV=test APP_ENV=test node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -31,19 +32,25 @@
     "migration:run:deploy": "npm run typeorm:deploy -- migration:run -d dist/data-source.js",
     "migration:revert:deploy": "npm run typeorm:deploy -- migration:revert -d dist/data-source.js",
     "migration:show:deploy": "npm run typeorm:deploy -- migration:show -d dist/data-source.js",
+    "worker:image:dev": "wrangler dev --config workers/post-image-processor/wrangler.jsonc",
+    "worker:image:check": "tsc --noEmit -p workers/post-image-processor/tsconfig.json",
+    "worker:image:deploy": "wrangler deploy --config workers/post-image-processor/wrangler.jsonc",
+    "worker:image:dry-run": "wrangler deploy --dry-run --config workers/post-image-processor/wrangler.jsonc",
     "seed:local": "cross-env NODE_ENV=development APP_ENV=local node --env-file=.env.local -r ts-node/register -r tsconfig-paths/register src/database/seeds/seed.local.ts",
     "seed:deploy": "node dist/database/seeds/seed.deploy.js",
     "geocode:local": "cross-env NODE_ENV=development APP_ENV=local node --env-file=.env.local -r ts-node/register -r tsconfig-paths/register src/database/seeds/data/spots/geocode.ts",
-    "check": "npm run format:check && npm run lint && npm run test && npm run build"
+    "check": "npm run format:check && npm run lint && npm run test:typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.972.0",
+    "@aws-sdk/s3-request-presigner": "^3.972.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^12.0.1",
     "@nestjs/swagger": "^11.2.5",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
@@ -53,8 +60,6 @@
     "class-validator": "^0.14.3",
     "cookie-parser": "^1.4.7",
     "helmet": "^8.1.0",
-    "multer": "^2.0.2",
-    "multer-s3": "^3.0.1",
     "nestjs-pino": "^4.6.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -62,12 +67,12 @@
     "pino": "^10.3.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "sharp": "^0.34.5",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.28",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260901.1",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",
@@ -76,7 +81,6 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
-    "@types/multer": "^2.0.0",
     "@types/node": "^24.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
@@ -96,7 +100,8 @@
     "tsconfig-paths": "^4.2.0",
     "typeorm-ts-node-esm": "^0.3.20",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "wrangler": "^4.127.1"
   },
   "jest": {
     "moduleFileExtensions": [

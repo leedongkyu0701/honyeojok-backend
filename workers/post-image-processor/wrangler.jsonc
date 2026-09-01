@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "honyeojok-post-image-processor",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "honyeo",
+    },
+  ],
+  "images": {
+    "binding": "IMAGES",
+  },
+  "queues": {
+    "consumers": [
+      {
+        "queue": "post-image-processing",
+        "max_batch_size": 1,
+        "max_retries": 3,
+        "dead_letter_queue": "post-image-processing-dlq",
+      },
+    ],
+  },
+}

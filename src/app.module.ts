@@ -25,6 +25,8 @@ import { observabilityConfig } from './config/observability.config';
 import { createPinoHttpOptions, loggerConfig } from './config/logger.config';
 import { parseEnvironment } from './config/environment';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { ScheduleModule } from '@nestjs/schedule';
+import { UploadsModule } from 'src/modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -61,12 +63,14 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
         limit: 200,
       },
     ]),
+    ScheduleModule.forRoot(),
     DestinationsModule,
     TripRoutesModule,
     AuthModule,
     UsersModule,
     SpotsModule,
     PostsModule,
+    UploadsModule,
     TagsModule,
     HealthModule,
   ],

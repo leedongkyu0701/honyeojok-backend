@@ -1,9 +1,12 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { S3Client } from '@aws-sdk/client-s3';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { ConfigType } from '@nestjs/config';
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
-import { Logger } from '@nestjs/common';
+import { BaseException } from 'src/common/exceptions/base.exception';
 import { storageConfig } from 'src/config/storage.config';
 
 @Injectable()
@@ -46,12 +49,15 @@ export class R2Service {
     this.publicUrl = publicUrl;
   }
 
-  async uploadImage(key: string, body: Buffer): Promise<string> {
+  async createPresignedPutUrl(
+    key: string,
+    contentType: string,
+    expiresIn: number,
+  ): Promise<string> {
     const r2Client = this.r2Client;
     const bucketName = this.bucketName;
-    const publicUrl = this.publicUrl;
 
-    if (!r2Client || !bucketName || !publicUrl) {
+    if (!r2Client || !bucketName) {
       throw BaseException.serviceUnavailable('R2 config missing', {
         provider: 'r2',
       });
@@ -61,25 +67,21 @@ export class R2Service {
       const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: key,
-        Body: body,
-        ContentType: 'image/webp',
-        ContentLength: body.length,
-        CacheControl: 'public, max-age=31536000, immutable',
+        ContentType: contentType,
       });
 
-      await r2Client.send(command);
-      return `${publicUrl}/${key}`;
+      return await getSignedUrl(r2Client, command, { expiresIn });
     } catch (error) {
-      this.logger.error(`Failed to upload image with key ${key}:`, error);
-      throw new BaseException(
-        'Failed to upload image',
-        ErrorCode.FILE_UPLOAD_FAILED,
-        HttpStatus.SERVICE_UNAVAILABLE,
+      this.logger.error(
+        `Failed to create a presigned upload URL for ${key}: ${getErrorMessage(error)}`,
       );
+      throw BaseException.serviceUnavailable('Image upload is unavailable', {
+        provider: 'r2',
+      });
     }
   }
 
-  async deleteImage(key: string): Promise<void> {
+  async deleteObject(key: string): Promise<void> {
     const r2Client = this.r2Client;
     const bucketName = this.bucketName;
 
@@ -95,14 +97,26 @@ export class R2Service {
 
       await r2Client.send(command);
     } catch (error) {
-      this.logger.error(`Failed to delete image with key ${key}:`, error);
+      this.logger.error(
+        `Failed to delete image with key ${key}: ${getErrorMessage(error)}`,
+      );
       throw BaseException.serviceUnavailable('Image delete failed', {
         provider: 'r2',
       });
     }
   }
 
-  extractKeyFromUrl(url: string): string {
-    return this.publicUrl ? url.replace(`${this.publicUrl}/`, '') : url;
+  getPublicUrl(key: string): string {
+    if (!this.publicUrl) {
+      throw BaseException.serviceUnavailable('R2 config missing', {
+        provider: 'r2',
+      });
+    }
+
+    return `${this.publicUrl}/${key}`;
   }
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

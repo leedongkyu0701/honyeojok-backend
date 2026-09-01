@@ -2,14 +2,12 @@ import {
   Controller,
   Post,
   UseGuards,
-  UseInterceptors,
   ParseIntPipe,
   Body,
   Delete,
   Get,
   Param,
   Query,
-  UploadedFiles,
 } from '@nestjs/common';
 
 import { CreatePostRequestDto } from './dto/request/create-post.request.dto';
@@ -19,10 +17,8 @@ import type { JwtUser } from 'src/modules/auth/types/jwt-user.type';
 import { CreateCommentRequestDto } from './dto/request/create-comment.request.dto';
 import { JwtAccessGuard } from 'src/modules/auth/guards/jwt-access.guard';
 import { FindPostsQuery } from './dto/query/find-posts.query.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { seconds, Throttle } from '@nestjs/throttler';
-import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { JwtOptionalGuard } from 'src/modules/auth/guards/jwt-optional.guard';
 import { PostsQueryService } from './posts-query.service';
@@ -47,31 +43,12 @@ export class PostsController {
   @ApiOperation({ summary: '게시글 작성' })
   @ApiBearerAuth('access-token')
   @Throttle({ default: { ttl: seconds(10), limit: 10 } })
-  @UseInterceptors(
-    FilesInterceptor('image', 5, {
-      limits: { fileSize: 7 * 1024 * 1024 }, // 7MB
-      fileFilter: (req, file, cb) => {
-        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-          return cb(
-            BaseException.badRequest(
-              'Only JPEG, PNG, and WEBP files are allowed',
-              ErrorCode.FILE_INVALID_TYPE,
-            ),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
   createPost(
     @CurrentUser() user: JwtUser,
     @Body()
     createPostDto: CreatePostRequestDto,
-    @UploadedFiles() images?: Express.Multer.File[],
   ): Promise<PostCardResponseDto> {
-    return this.postsService.createPost(user.id, createPostDto, images);
+    return this.postsService.createPost(user.id, createPostDto);
   }
 
   @Get()
