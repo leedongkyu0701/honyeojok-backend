@@ -42,6 +42,9 @@ export function createPinoHttpOptions(config: {
 }) {
   return {
     level: config.level,
+    // Custom serializers need the original Express request/response objects.
+    // pino-http otherwise wraps them in already-serialized objects.
+    wrapSerializers: false,
     transport: config.pretty
       ? {
           target: 'pino-pretty',
