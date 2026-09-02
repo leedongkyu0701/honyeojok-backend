@@ -20,6 +20,7 @@ export class UploadsCleanupService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async cleanupExpiredUploads(): Promise<void> {
+    const startedAt = Date.now();
     const cutoff = new Date(Date.now() - UPLOAD_CLEANUP_GRACE_PERIOD_MS);
     const candidates = await this.mediaUploadRepository.find({
       where: {
@@ -35,6 +36,8 @@ export class UploadsCleanupService {
       take: 100,
       order: { expiresAt: 'ASC' },
     });
+    let deleted = 0;
+    let failed = 0;
 
     for (const candidate of candidates) {
       const upload = await this.claimForCleanup(candidate.id, cutoff);
@@ -50,12 +53,18 @@ export class UploadsCleanupService {
           status: MediaUploadStatus.FAILED,
           attachedAt: IsNull(),
         });
+        deleted += 1;
       } catch (error) {
+        failed += 1;
         this.logger.warn(
           `Upload cleanup failed for ${upload.id}: ${getErrorMessage(error)}`,
         );
       }
     }
+
+    this.logger.log(
+      `Upload cleanup completed: candidates=${candidates.length}, deleted=${deleted}, failed=${failed}, elapsedMs=${Date.now() - startedAt}`,
+    );
   }
 
   private async claimForCleanup(
