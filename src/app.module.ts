@@ -21,6 +21,7 @@ import {
 } from './config/database.config';
 import { authConfig } from './config/auth.config';
 import { storageConfig } from './config/storage.config';
+import { redisConfig } from './config/redis.config';
 import { observabilityConfig } from './config/observability.config';
 import { createPinoHttpOptions, loggerConfig } from './config/logger.config';
 import { parseEnvironment } from './config/environment';
@@ -40,6 +41,7 @@ import { UploadsModule } from 'src/modules/uploads/uploads.module';
         databaseConfig,
         authConfig,
         storageConfig,
+        redisConfig,
         observabilityConfig,
         loggerConfig,
       ],

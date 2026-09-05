@@ -49,6 +49,23 @@ const optionalUrl = z.preprocess(
     .optional(),
 );
 
+const optionalRedisUrl = z.preprocess(
+  (value) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  z
+    .string()
+    .trim()
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return (
+        (url.protocol === 'redis:' || url.protocol === 'rediss:') &&
+        Boolean(url.hostname)
+      );
+    }, 'must be a redis:// or rediss:// URL')
+    .optional(),
+);
+
 const corsOrigins = z
   .string()
   .trim()
@@ -113,6 +130,8 @@ export const envSchema = z
     R2_BUCKET_NAME: optionalString,
     R2_PUBLIC_URL: optionalUrl,
     MEDIA_WORKER_SECRET: optionalString,
+
+    REDIS_URL: optionalRedisUrl,
 
     SENTRY_ENABLED: booleanFromEnvironment,
     SENTRY_DSN: optionalUrl,

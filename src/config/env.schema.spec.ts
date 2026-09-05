@@ -68,6 +68,23 @@ describe('environment schema', () => {
     expect(parsed.PORT).toBe(5001);
     expect(parsed.TRUST_PROXY).toBe(false);
     expect(parsed.DB_SSL).toBe(false);
+    expect(parsed.REDIS_URL).toBeUndefined();
+  });
+
+  it('accepts a Redis URL and treats an empty Redis URL as disabled', () => {
+    expect(
+      parseEnvironment(environment({ REDIS_URL: 'redis://127.0.0.1:6379' }))
+        .REDIS_URL,
+    ).toBe('redis://127.0.0.1:6379');
+    expect(
+      parseEnvironment(environment({ REDIS_URL: '' })).REDIS_URL,
+    ).toBeUndefined();
+  });
+
+  it('rejects a non-Redis REDIS_URL', () => {
+    expect(() =>
+      parseEnvironment(environment({ REDIS_URL: 'https://example.com' })),
+    ).toThrow('must be a redis:// or rediss:// URL');
   });
 
   it('parses a valid production configuration', () => {

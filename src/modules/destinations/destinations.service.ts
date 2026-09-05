@@ -17,6 +17,10 @@ import { Spot } from 'src/modules/spots/entities/spot.entity';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { SpotCategory } from 'src/modules/spots/enums/spot-category.enum';
 import { DestinationMapper } from './mappers/destination.mapper';
+import { RedisCacheService } from 'src/infrastructure/cache/redis/redis-cache.service';
+
+export const DESTINATIONS_MAP_CACHE_KEY = 'cache:destinations:map:v1';
+export const DESTINATIONS_MAP_CACHE_TTL_SECONDS = 300;
 
 @Injectable()
 export class DestinationsService {
@@ -27,6 +31,7 @@ export class DestinationsService {
     private readonly tripRouteRepo: Repository<TripRoute>,
     @InjectRepository(Spot)
     private readonly spotRepo: Repository<Spot>,
+    private readonly redisCacheService: RedisCacheService,
   ) {}
 
   async findByQuery(
@@ -86,6 +91,14 @@ export class DestinationsService {
   }
 
   async findMap(): Promise<DestinationMapResponseDto[]> {
+    const cached = await this.redisCacheService.getJson<
+      DestinationMapResponseDto[]
+    >(DESTINATIONS_MAP_CACHE_KEY);
+
+    if (cached !== null) {
+      return cached;
+    }
+
     const rows = await this.repo.find({
       select: [
         'id',
@@ -99,7 +112,7 @@ export class DestinationsService {
       relations: ['tags'],
     });
 
-    return rows.map((d) => ({
+    const mapDestinations = rows.map((d) => ({
       id: d.id,
       slug: d.slug,
       name: d.name,
@@ -109,6 +122,14 @@ export class DestinationsService {
       longitude: d.longitude,
       tagSlugs: d.tags?.map((t) => t.slug) ?? [],
     }));
+
+    await this.redisCacheService.setJson(
+      DESTINATIONS_MAP_CACHE_KEY,
+      mapDestinations,
+      DESTINATIONS_MAP_CACHE_TTL_SECONDS,
+    );
+
+    return mapDestinations;
   }
 
   async findByRegion(region: string): Promise<DestinationDetailResponseDto> {
@@ -216,7 +237,7 @@ export class DestinationsService {
   }
 
   async createOne(dto: CreateDestinationRequestDto): Promise<Destination> {
-    return this.repo.manager.transaction(async (m) => {
+    const destination = await this.repo.manager.transaction(async (m) => {
       const destinationRepo = m.getRepository(Destination);
       const tagRepo = m.getRepository(Tag);
 
@@ -258,5 +279,10 @@ export class DestinationsService {
 
       return destinationRepo.save(destination);
     });
+
+    // Keep this after commit; future destination or map-tag writes need this invalidation too.
+    await this.redisCacheService.delete(DESTINATIONS_MAP_CACHE_KEY);
+
+    return destination;
   }
 }
