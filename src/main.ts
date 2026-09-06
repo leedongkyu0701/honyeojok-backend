@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import type { Express, NextFunction, Request, Response } from 'express';
+import type { Express } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { appConfig } from './config/app.config';
@@ -18,22 +18,6 @@ async function bootstrap() {
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
   expressApp.set('trust proxy', config.trustProxy);
-  expressApp.use((req: Request, _res: Response, next: NextFunction) => {
-    if (req.path === '/health' && req.headers['x-trust-proxy-test']) {
-      logger.log({
-        event: 'TRUST_PROXY_TEST',
-        test: req.headers['x-trust-proxy-test'],
-        trustProxy: config.trustProxy,
-        ip: req.ip,
-        ips: req.ips,
-        remoteAddress: req.socket.remoteAddress,
-        xForwardedFor: req.headers['x-forwarded-for'] ?? null,
-        cfConnectingIp: req.headers['cf-connecting-ip'] ?? null,
-      });
-    }
-
-    next();
-  });
   expressApp.disable('x-powered-by');
   app.enableShutdownHooks();
 
