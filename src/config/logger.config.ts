@@ -71,7 +71,9 @@ export function createPinoHttpOptions(config: {
     },
     autoLogging: {
       ignore: (req: Request) =>
-        ['/health', '/docs', '/favicon.ico'].includes(req.path),
+        req.path === '/health' ||
+        req.path.startsWith('/health/') ||
+        ['/docs', '/favicon.ico'].includes(req.path),
     },
     redact: {
       paths: [

@@ -103,11 +103,20 @@ describe('createPinoHttpOptions', () => {
       options.customLogLevel(rawRequest, response().response, new Error()),
     ).toBe('error');
     expect(options.autoLogging.ignore(request({ path: '/health' }))).toBe(true);
+    expect(options.autoLogging.ignore(request({ path: '/health/live' }))).toBe(
+      true,
+    );
+    expect(options.autoLogging.ignore(request({ path: '/health/ready' }))).toBe(
+      true,
+    );
     expect(options.autoLogging.ignore(request({ path: '/docs' }))).toBe(true);
     expect(options.autoLogging.ignore(request({ path: '/favicon.ico' }))).toBe(
       true,
     );
     expect(options.autoLogging.ignore(request({ path: '/posts/123' }))).toBe(
+      false,
+    );
+    expect(options.autoLogging.ignore(request({ path: '/healthcheck' }))).toBe(
       false,
     );
     expect(options.redact).toEqual({
