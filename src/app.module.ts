@@ -12,7 +12,6 @@ import { seconds, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerCustomGuard } from './common/guards/throttler.guard';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { HealthModule } from 'src/modules/health/health.module';
-import { DbShutdownService } from './database/db-shutdown.service';
 import { LoggerModule } from 'nestjs-pino';
 import { appConfig } from './config/app.config';
 import {
@@ -85,7 +84,6 @@ import { UploadsModule } from 'src/modules/uploads/uploads.module';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
-    DbShutdownService,
   ],
 })
 export class AppModule {}

@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import {
   DeleteObjectCommand,
   PutObjectCommand,
@@ -10,7 +15,7 @@ import { BaseException } from 'src/common/exceptions/base.exception';
 import { storageConfig } from 'src/config/storage.config';
 
 @Injectable()
-export class R2Service {
+export class R2Service implements OnApplicationShutdown {
   private r2Client?: S3Client;
   private bucketName?: string;
   private publicUrl?: string;
@@ -114,6 +119,10 @@ export class R2Service {
     }
 
     return `${this.publicUrl}/${key}`;
+  }
+
+  onApplicationShutdown(): void {
+    this.r2Client?.destroy();
   }
 }
 
