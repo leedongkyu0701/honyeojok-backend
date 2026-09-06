@@ -14,6 +14,7 @@ export const authConfig = registerAs('auth', () => {
       sameSite: env.COOKIE_SAMESITE,
     },
     oauth: {
+      requestTimeoutMs: env.OAUTH_REQUEST_TIMEOUT_MS,
       kakao: {
         clientId: env.KAKAO_CLIENT_ID,
         clientSecret: env.KAKAO_CLIENT_SECRET,

@@ -1,4 +1,5 @@
 import { parseDatabaseEnvironment, parseEnvironment } from './environment';
+import { DEFAULT_OAUTH_REQUEST_TIMEOUT_MS } from './env.schema';
 
 const validLocalEnvironment: Record<string, string> = {
   NODE_ENV: 'development',
@@ -69,7 +70,29 @@ describe('environment schema', () => {
     expect(parsed.TRUST_PROXY).toBe(false);
     expect(parsed.DB_SSL).toBe(false);
     expect(parsed.REDIS_URL).toBeUndefined();
+    expect(parsed.OAUTH_REQUEST_TIMEOUT_MS).toBe(
+      DEFAULT_OAUTH_REQUEST_TIMEOUT_MS,
+    );
   });
+
+  it('uses a bounded default OAuth request timeout and accepts a custom value', () => {
+    expect(parseEnvironment(environment()).OAUTH_REQUEST_TIMEOUT_MS).toBe(
+      DEFAULT_OAUTH_REQUEST_TIMEOUT_MS,
+    );
+    expect(
+      parseEnvironment(environment({ OAUTH_REQUEST_TIMEOUT_MS: '7000' }))
+        .OAUTH_REQUEST_TIMEOUT_MS,
+    ).toBe(7000);
+  });
+
+  it.each(['999', '10001', 'not-a-number'])(
+    'rejects an out-of-range OAuth request timeout: %s',
+    (value) => {
+      expect(() =>
+        parseEnvironment(environment({ OAUTH_REQUEST_TIMEOUT_MS: value })),
+      ).toThrow('Invalid environment configuration');
+    },
+  );
 
   it('accepts a Redis URL and treats an empty Redis URL as disabled', () => {
     expect(

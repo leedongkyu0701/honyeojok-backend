@@ -16,6 +16,26 @@ import type { SocialLoginInput } from './types/social-login.input';
 import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import { authConfig } from 'src/config/auth.config';
 
+type OAuthProvider = 'naver' | 'kakao' | 'google';
+type OAuthStep = 'token' | 'user_info';
+type OAuthRequestContext = {
+  provider: OAuthProvider;
+  step: OAuthStep;
+};
+type OAuthRequestFailureReason = 'timeout' | 'network';
+
+const USER_INFO_MAX_ATTEMPTS = 2;
+const USER_INFO_RETRY_BASE_DELAY_MS = 100;
+const USER_INFO_RETRY_JITTER_MS = 100;
+const RETRYABLE_USER_INFO_STATUSES = new Set([429, 502, 503, 504]);
+
+class OAuthRequestFailure extends Error {
+  constructor(readonly reason: OAuthRequestFailureReason) {
+    super(`OAuth request failed: ${reason}`);
+    this.name = OAuthRequestFailure.name;
+  }
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -77,11 +97,15 @@ export class AuthService {
       code,
     });
 
-    const response = await fetch('https://nid.naver.com/oauth2.0/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
+    const response = await this.fetchOAuthRequest(
+      'https://nid.naver.com/oauth2.0/token',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      },
+      { provider: 'naver', step: 'token' },
+    );
 
     if (!response.ok) {
       throw new BaseException(
@@ -104,10 +128,14 @@ export class AuthService {
   }
 
   async naverUserInfo(accessToken: string): Promise<NaverUserResponse> {
-    const response = await fetch('https://openapi.naver.com/v1/nid/me', {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const response = await this.fetchUserInfoWithRetry(
+      'https://openapi.naver.com/v1/nid/me',
+      {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+      { provider: 'naver', step: 'user_info' },
+    );
 
     if (!response.ok) {
       throw new BaseException(
@@ -139,13 +167,17 @@ export class AuthService {
     params.append('redirect_uri', redirectUri);
     params.append('code', code);
 
-    const response = await fetch('https://kauth.kakao.com/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    const response = await this.fetchOAuthRequest(
+      'https://kauth.kakao.com/oauth/token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+        },
+        body: params.toString(),
       },
-      body: params.toString(),
-    });
+      { provider: 'kakao', step: 'token' },
+    );
 
     if (!response.ok) {
       throw new BaseException(
@@ -168,13 +200,17 @@ export class AuthService {
   }
 
   async kakaoUserInfo(accessToken: string): Promise<KakaoUserResponse> {
-    const response = await fetch('https://kapi.kakao.com/v2/user/me', {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    const response = await this.fetchUserInfoWithRetry(
+      'https://kapi.kakao.com/v2/user/me',
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+        },
       },
-    });
+      { provider: 'kakao', step: 'user_info' },
+    );
 
     if (!response.ok) {
       throw new BaseException(
@@ -209,11 +245,15 @@ export class AuthService {
       grant_type: 'authorization_code',
     });
 
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    });
+    const response = await this.fetchOAuthRequest(
+      'https://oauth2.googleapis.com/token',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      },
+      { provider: 'google', step: 'token' },
+    );
 
     if (!response.ok) {
       throw new BaseException(
@@ -236,11 +276,13 @@ export class AuthService {
   }
 
   async googleUserInfo(accessToken: string): Promise<GoogleUserResponse> {
-    const response = await fetch(
+    const response = await this.fetchUserInfoWithRetry(
       'https://www.googleapis.com/oauth2/v2/userinfo',
       {
+        method: 'GET',
         headers: { Authorization: `Bearer ${accessToken}` },
       },
+      { provider: 'google', step: 'user_info' },
     );
 
     if (!response.ok) {
@@ -253,6 +295,103 @@ export class AuthService {
     }
 
     return (await response.json()) as GoogleUserResponse;
+  }
+
+  private async fetchOAuthRequest(
+    url: string,
+    init: RequestInit,
+    context: OAuthRequestContext,
+  ): Promise<Response> {
+    try {
+      return await this.fetchWithTimeout(url, init);
+    } catch (error) {
+      if (error instanceof OAuthRequestFailure) {
+        throw this.toOAuthRequestException(context, error);
+      }
+      throw error;
+    }
+  }
+
+  private async fetchUserInfoWithRetry(
+    url: string,
+    init: RequestInit,
+    context: OAuthRequestContext,
+  ): Promise<Response> {
+    let lastFailure: OAuthRequestFailure | undefined;
+
+    for (let attempt = 0; attempt < USER_INFO_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await this.fetchWithTimeout(url, init);
+
+        if (
+          !RETRYABLE_USER_INFO_STATUSES.has(response.status) ||
+          attempt === USER_INFO_MAX_ATTEMPTS - 1
+        ) {
+          return response;
+        }
+      } catch (error) {
+        if (!(error instanceof OAuthRequestFailure)) {
+          throw error;
+        }
+
+        lastFailure = error;
+        if (attempt === USER_INFO_MAX_ATTEMPTS - 1) {
+          throw this.toOAuthRequestException(context, error);
+        }
+      }
+
+      await this.waitForUserInfoRetry(attempt);
+    }
+
+    throw this.toOAuthRequestException(
+      context,
+      lastFailure ?? new OAuthRequestFailure('network'),
+    );
+  }
+
+  private async fetchWithTimeout(
+    url: string,
+    init: RequestInit,
+  ): Promise<Response> {
+    const signal = AbortSignal.timeout(this.config.oauth.requestTimeoutMs);
+
+    try {
+      return await fetch(url, { ...init, signal });
+    } catch (error) {
+      const isTimeout =
+        signal.aborted ||
+        (error instanceof Error && error.name === 'TimeoutError');
+      throw new OAuthRequestFailure(isTimeout ? 'timeout' : 'network');
+    }
+  }
+
+  private toOAuthRequestException(
+    context: OAuthRequestContext,
+    failure: OAuthRequestFailure,
+  ): BaseException {
+    const isTimeout = failure.reason === 'timeout';
+
+    return new BaseException(
+      isTimeout
+        ? 'OAuth provider request timed out'
+        : 'OAuth provider request failed',
+      ErrorCode.OAUTH_FAILED,
+      isTimeout ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
+      {
+        provider: context.provider,
+        step: context.step,
+        reason: failure.reason,
+      },
+    );
+  }
+
+  private waitForUserInfoRetry(attempt: number): Promise<void> {
+    const exponentialDelay = USER_INFO_RETRY_BASE_DELAY_MS * 2 ** attempt;
+    const jitter = Math.floor(Math.random() * USER_INFO_RETRY_JITTER_MS);
+
+    return new Promise((resolve) =>
+      setTimeout(resolve, exponentialDelay + jitter),
+    );
   }
 
   async logout(userId: number): Promise<void> {

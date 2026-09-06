@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const requiredString = z.string().trim().min(1);
+export const DEFAULT_OAUTH_REQUEST_TIMEOUT_MS = 5_000;
 
 const booleanFromEnvironment = z
   .enum(['true', 'false'])
@@ -16,6 +17,17 @@ const numberFromEnvironment = (label: string, schema: z.ZodNumber) =>
 
 const portFromEnvironment = (label: string) =>
   numberFromEnvironment(label, z.number().int().min(1).max(65535));
+
+const oauthRequestTimeoutMs = z.preprocess(
+  (value) =>
+    value === undefined || value === ''
+      ? String(DEFAULT_OAUTH_REQUEST_TIMEOUT_MS)
+      : value,
+  numberFromEnvironment(
+    'OAUTH_REQUEST_TIMEOUT_MS',
+    z.number().int().min(1_000).max(10_000),
+  ),
+);
 
 const origin = z
   .string()
@@ -122,6 +134,7 @@ export const envSchema = z
     NAVER_CLIENT_ID: requiredString,
     NAVER_CLIENT_SECRET: requiredString,
     NAVER_REDIRECT_URI: z.string().trim().url(),
+    OAUTH_REQUEST_TIMEOUT_MS: oauthRequestTimeoutMs,
 
     IMAGE_UPLOAD_ENABLED: booleanFromEnvironment,
     R2_ACCOUNT_ID: optionalString,
