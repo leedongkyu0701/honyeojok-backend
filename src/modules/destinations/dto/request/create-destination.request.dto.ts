@@ -23,7 +23,6 @@ export class CreateDestinationRequestDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ enum: ProvinceGroup })
   @IsEnum(ProvinceGroup)
   province: ProvinceGroup;
 
@@ -59,28 +58,28 @@ export class CreateDestinationRequestDto {
   description: string;
 
   // 혼여 지표 (0~10 가정)
-  @ApiProperty({ example: 6, minimum: 0, maximum: 10 })
+  @ApiProperty({ example: 6 })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10)
   food: number;
 
-  @ApiProperty({ example: 7, minimum: 0, maximum: 10 })
+  @ApiProperty({ example: 7 })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10)
   transport: number;
 
-  @ApiProperty({ example: 8, minimum: 0, maximum: 10 })
+  @ApiProperty({ example: 8 })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10)
   safety: number;
 
-  @ApiProperty({ example: 3, minimum: 0, maximum: 10 })
+  @ApiProperty({ example: 3 })
   @Type(() => Number)
   @IsInt()
   @Min(0)
@@ -93,7 +92,6 @@ export class CreateDestinationRequestDto {
   @IsString()
   imageUrl?: string;
 
-  @ApiPropertyOptional({ enum: ImageSource })
   @IsOptional()
   @IsEnum(ImageSource)
   imageSource?: ImageSource;
@@ -104,7 +102,6 @@ export class CreateDestinationRequestDto {
   imageCredit?: string;
 
   @ApiPropertyOptional({
-    type: [String],
     example: ['solo', 'quiet', 'safe'],
     description: '연결할 태그 slug 목록',
   })

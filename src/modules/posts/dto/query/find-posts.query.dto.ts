@@ -11,24 +11,21 @@ export class FindPostsQuery {
   @Min(1)
   page: number = 1;
 
-  @ApiPropertyOptional({ example: 10, default: 10, maximum: 10 })
+  @ApiPropertyOptional({ example: 10 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10)
   take: number = 10;
 
-  @ApiPropertyOptional({ enum: PostType })
   @IsOptional()
   @IsEnum(PostType)
   type?: PostType;
 
-  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   q?: string;
 
-  @ApiPropertyOptional({ enum: ProvinceGroup })
   @IsOptional()
   @IsEnum(ProvinceGroup)
   province?: ProvinceGroup;

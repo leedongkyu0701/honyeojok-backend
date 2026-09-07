@@ -15,6 +15,7 @@ export class FindUploadStatusQueryDto {
       'Comma-separated upload UUIDs. The response preserves this order.',
     example:
       '550e8400-e29b-41d4-a716-446655440000,660e8400-e29b-41d4-a716-446655440000',
+    maxItems: POST_IMAGE_UPLOAD_POLICY.maxCount,
   })
   @Transform(({ value }) =>
     Array.isArray(value)

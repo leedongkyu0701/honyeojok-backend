@@ -19,8 +19,6 @@ export class GetNearbySpotsQueryDto {
   @ApiPropertyOptional({
     description: '스팟 카테고리 필터',
     example: [SpotCategory.FOOD, SpotCategory.CAFE],
-    enum: SpotCategory,
-    isArray: true,
   })
   @IsOptional()
   @IsEnum(SpotCategory, { each: true })

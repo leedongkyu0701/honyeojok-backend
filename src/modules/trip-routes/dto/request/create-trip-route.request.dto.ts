@@ -8,22 +8,19 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CreateTripRouteDayRequestDto } from './create-trip-route-day.request.dto';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTripRouteRequestDto {
-  @ApiProperty()
   @IsString()
   slug: string;
 
-  @ApiProperty({ description: '소속 여행지 slug (예: jeju)' })
+  /** 소속 여행지 slug (예: jeju) */
   @IsString()
   destinationSlug: string;
 
-  @ApiProperty()
   @IsString()
   title: string;
 
-  @ApiProperty()
   @IsString()
   summary: string;
 
@@ -32,7 +29,7 @@ export class CreateTripRouteRequestDto {
   @IsString()
   honyeoTip?: string;
 
-  @ApiProperty({ description: '일수(보통 daysPlan.length와 일치해야 함)' })
+  /** 일수(보통 daysPlan.length와 일치해야 함) */
   @IsInt()
   @Min(1)
   days: number;
@@ -43,13 +40,11 @@ export class CreateTripRouteRequestDto {
   @Min(0)
   honyeoCost?: number;
 
-  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   tagSlugs?: string[];
 
-  @ApiProperty({ type: [CreateTripRouteDayRequestDto] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateTripRouteDayRequestDto)

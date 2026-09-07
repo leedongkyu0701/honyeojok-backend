@@ -13,11 +13,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { POST_IMAGE_UPLOAD_POLICY } from '../../uploads.constants';
 
 export class CreateUploadSessionFileRequestDto {
-  @ApiProperty({ enum: POST_IMAGE_UPLOAD_POLICY.allowedContentTypes })
   @IsIn(POST_IMAGE_UPLOAD_POLICY.allowedContentTypes)
   contentType: string;
 
-  @ApiProperty({ maximum: POST_IMAGE_UPLOAD_POLICY.maxBytes })
   @IsInt()
   @Min(1)
   @Max(POST_IMAGE_UPLOAD_POLICY.maxBytes)
@@ -25,10 +23,7 @@ export class CreateUploadSessionFileRequestDto {
 }
 
 export class CreateUploadSessionsRequestDto {
-  @ApiProperty({
-    type: [CreateUploadSessionFileRequestDto],
-    maxItems: POST_IMAGE_UPLOAD_POLICY.maxCount,
-  })
+  @ApiProperty({ maxItems: POST_IMAGE_UPLOAD_POLICY.maxCount })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(POST_IMAGE_UPLOAD_POLICY.maxCount)
