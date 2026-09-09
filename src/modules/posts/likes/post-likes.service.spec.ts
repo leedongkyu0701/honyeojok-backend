@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
+import { ErrorCode } from 'src/common/exceptions/base.exception';
 import { PostLikesService } from './post-likes.service';
 import { Post } from '../entities/post.entity';
 import { PostLike } from '../entities/post-like.entity';
@@ -84,5 +85,25 @@ describe('PostLikesService', () => {
       'likeCount',
       1,
     );
+  });
+
+  it('rejects a like for a post that is missing or deleted', async () => {
+    manager.findOne.mockResolvedValueOnce(null);
+
+    await expect(service.toggleLikePost(1, 10)).rejects.toMatchObject({
+      code: ErrorCode.RESOURCE_NOT_FOUND,
+    });
+    expect(manager.exists).not.toHaveBeenCalled();
+  });
+
+  it('rejects a like from a user that no longer exists', async () => {
+    manager.findOne
+      .mockResolvedValueOnce({ id: 10, likeCount: 0 })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.toggleLikePost(1, 10)).rejects.toMatchObject({
+      code: ErrorCode.RESOURCE_NOT_FOUND,
+    });
+    expect(manager.exists).not.toHaveBeenCalled();
   });
 });

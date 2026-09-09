@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ErrorCode } from 'src/common/exceptions/base.exception';
 import { User } from 'src/modules/users/entities/user.entity';
 import { BookmarksQueryService } from './bookmarks-query.service';
 import { Bookmark } from './entities/bookmark.entity';
@@ -38,19 +39,6 @@ describe('BookmarksQueryService', () => {
   it('keeps bookmark ordering, pagination, and trip-route card output', async () => {
     userRepository.findOne.mockResolvedValue({ id: 1 });
     queryBuilder.getManyAndCount.mockResolvedValue([
-      {
-        tripRoute: {
-          id: 5,
-          slug: 'seoul-day-one',
-          title: '서울 혼자 여행',
-          summary: '요약',
-          days: 1,
-          bookmarkCount: 3,
-          destination: { slug: 'seoul' },
-        },
-      },
-    ]);
-    queryBuilder.getManyAndCount.mockResolvedValueOnce([
       [
         {
           tripRoute: {
@@ -88,5 +76,14 @@ describe('BookmarksQueryService', () => {
     );
     expect(queryBuilder.skip).toHaveBeenCalledWith(4);
     expect(queryBuilder.take).toHaveBeenCalledWith(4);
+  });
+
+  it('rejects bookmark lookup for a user that no longer exists', async () => {
+    userRepository.findOne.mockResolvedValue(null);
+
+    await expect(service.findByUserId(1, 1, 10)).rejects.toMatchObject({
+      code: ErrorCode.RESOURCE_NOT_FOUND,
+    });
+    expect(bookmarkRepository.createQueryBuilder).not.toHaveBeenCalled();
   });
 });
