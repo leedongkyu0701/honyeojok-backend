@@ -2,7 +2,7 @@ import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
-import type { IntegrationDatabaseConfig } from './test-data-source';
+import type { TestDatabaseConfig } from './test-data-source';
 
 export async function startPostgresTestContainer(): Promise<StartedPostgreSqlContainer> {
   return new PostgreSqlContainer('postgres:17')
@@ -14,7 +14,7 @@ export async function startPostgresTestContainer(): Promise<StartedPostgreSqlCon
 
 export function getTestDatabaseConfig(
   container: StartedPostgreSqlContainer,
-): IntegrationDatabaseConfig {
+): TestDatabaseConfig {
   return {
     host: container.getHost(),
     port: container.getPort(),

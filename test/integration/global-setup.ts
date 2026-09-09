@@ -1,7 +1,7 @@
 import type { TestProject } from 'vitest/node';
 import {
-  createIntegrationDataSource,
-  type IntegrationDatabaseConfig,
+  createTestDataSource,
+  type TestDatabaseConfig,
 } from '../support/database/test-data-source';
 import {
   getTestDatabaseConfig,
@@ -10,8 +10,8 @@ import {
 
 export default async function setup(project: TestProject) {
   const container = await startPostgresTestContainer();
-  const config: IntegrationDatabaseConfig = getTestDatabaseConfig(container);
-  const dataSource = createIntegrationDataSource(config);
+  const config: TestDatabaseConfig = getTestDatabaseConfig(container);
+  const dataSource = createTestDataSource(config);
 
   try {
     await dataSource.initialize();

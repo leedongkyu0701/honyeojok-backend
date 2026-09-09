@@ -1,5 +1,4 @@
 import request from 'supertest';
-import { inject } from 'vitest';
 import {
   createE2eApplication,
   type E2eApplication,
@@ -9,7 +8,7 @@ describe('Health endpoints (e2e)', () => {
   let e2e: E2eApplication;
 
   beforeAll(async () => {
-    e2e = await createE2eApplication(inject('e2eDatabase'));
+    e2e = await createE2eApplication();
   });
 
   afterAll(async () => {

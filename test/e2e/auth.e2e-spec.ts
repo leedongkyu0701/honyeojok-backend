@@ -1,6 +1,5 @@
 import request from 'supertest';
 import { User } from 'src/modules/users/entities/user.entity';
-import { inject } from 'vitest';
 import {
   createE2eApplication,
   type E2eApplication,
@@ -13,7 +12,7 @@ describe('Authentication flows (e2e)', () => {
   let e2e: E2eApplication;
 
   beforeAll(async () => {
-    e2e = await createE2eApplication(inject('e2eDatabase'));
+    e2e = await createE2eApplication();
   });
 
   beforeEach(async () => {

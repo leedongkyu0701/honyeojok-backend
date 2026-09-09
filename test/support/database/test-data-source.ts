@@ -19,11 +19,9 @@ import { TripRoute } from 'src/modules/trip-routes/entities/trip-route.entity';
 import { MediaUpload } from 'src/modules/uploads/entities/media-upload.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 
-export type IntegrationDatabaseConfig = DatabaseConfiguration;
+export type TestDatabaseConfig = DatabaseConfiguration;
 
-export function createIntegrationDataSource(
-  config: IntegrationDatabaseConfig,
-): DataSource {
+export function createTestDataSource(config: TestDatabaseConfig): DataSource {
   return new DataSource({
     ...createDatabaseConnectionOptions(config),
     entities: [

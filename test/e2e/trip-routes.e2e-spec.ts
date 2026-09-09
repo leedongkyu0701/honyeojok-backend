@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { Bookmark } from 'src/modules/trip-routes/entities/bookmark.entity';
 import { TripRoute } from 'src/modules/trip-routes/entities/trip-route.entity';
-import { inject } from 'vitest';
 import {
   createTestDestination,
   createTestTripRoute,
@@ -17,7 +16,7 @@ describe('Trip route bookmark journey (e2e)', () => {
   let e2e: E2eApplication;
 
   beforeAll(async () => {
-    e2e = await createE2eApplication(inject('e2eDatabase'));
+    e2e = await createE2eApplication();
   });
 
   beforeEach(async () => {

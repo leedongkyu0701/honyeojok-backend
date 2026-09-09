@@ -3,7 +3,7 @@ import { inject } from 'vitest';
 import { PostLike } from 'src/modules/posts/entities/post-like.entity';
 import { Post } from 'src/modules/posts/entities/post.entity';
 import { PostLikesService } from 'src/modules/posts/likes/post-likes.service';
-import { createIntegrationDataSource } from '../../support/database/test-data-source';
+import { createTestDataSource } from '../../support/database/test-data-source';
 import {
   createTestPost,
   createTestUser,
@@ -15,7 +15,7 @@ describe('PostLikesService with PostgreSQL', () => {
   let service: PostLikesService;
 
   beforeAll(async () => {
-    dataSource = createIntegrationDataSource(inject('integrationDatabase'));
+    dataSource = createTestDataSource(inject('integrationDatabase'));
     await dataSource.initialize();
     service = new PostLikesService(dataSource);
   });

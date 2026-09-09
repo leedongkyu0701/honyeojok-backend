@@ -9,7 +9,7 @@ import { TripRouteItem } from 'src/modules/trip-routes/entities/trip-route-item.
 import { TripRoute } from 'src/modules/trip-routes/entities/trip-route.entity';
 import { TripRoutesService } from 'src/modules/trip-routes/trip-routes.service';
 import { User } from 'src/modules/users/entities/user.entity';
-import { createIntegrationDataSource } from '../../support/database/test-data-source';
+import { createTestDataSource } from '../../support/database/test-data-source';
 import { createTestDestination } from '../../support/database/fixtures';
 import { resetDatabase } from '../../support/database/reset-database';
 
@@ -18,7 +18,7 @@ describe('TripRoutesService transaction', () => {
   let service: TripRoutesService;
 
   beforeAll(async () => {
-    dataSource = createIntegrationDataSource(inject('integrationDatabase'));
+    dataSource = createTestDataSource(inject('integrationDatabase'));
     await dataSource.initialize();
     service = new TripRoutesService(
       dataSource.getRepository(TripRoute),

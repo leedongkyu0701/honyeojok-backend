@@ -1,12 +1,12 @@
 import { DataSource } from 'typeorm';
 import { inject } from 'vitest';
-import { createIntegrationDataSource } from '../../support/database/test-data-source';
+import { createTestDataSource } from '../../support/database/test-data-source';
 
 describe('PostgreSQL migrations', () => {
   let dataSource: DataSource;
 
   beforeAll(async () => {
-    dataSource = createIntegrationDataSource(inject('integrationDatabase'));
+    dataSource = createTestDataSource(inject('integrationDatabase'));
     await dataSource.initialize();
   });
 

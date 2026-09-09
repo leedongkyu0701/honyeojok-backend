@@ -1,8 +1,8 @@
-import type { IntegrationDatabaseConfig } from './test-data-source';
+import type { TestDatabaseConfig } from './test-data-source';
 
 declare module 'vitest' {
   export interface ProvidedContext {
-    integrationDatabase: IntegrationDatabaseConfig;
-    e2eDatabase: IntegrationDatabaseConfig;
+    integrationDatabase: TestDatabaseConfig;
+    e2eDatabase: TestDatabaseConfig;
   }
 }

@@ -7,8 +7,6 @@ import { configureHttpApplication } from 'src/bootstrap/configure-http-applicati
 import { AppModule } from 'src/app.module';
 import { AuthService } from 'src/modules/auth/auth.service';
 import { appConfig } from 'src/config/app.config';
-import type { IntegrationDatabaseConfig } from '../database/test-data-source';
-import { applyE2eTestEnvironment } from './test-environment';
 
 export type E2eApplication = {
   app: INestApplication<App>;
@@ -16,13 +14,7 @@ export type E2eApplication = {
   dataSource: DataSource;
 };
 
-export async function createE2eApplication(
-  database: IntegrationDatabaseConfig,
-): Promise<E2eApplication> {
-  applyE2eTestEnvironment(database);
-
-  // Config factories resolve process.env only while Nest creates the module.
-  // The deterministic environment above is therefore in place before parsing.
+export async function createE2eApplication(): Promise<E2eApplication> {
   const testingModule = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();

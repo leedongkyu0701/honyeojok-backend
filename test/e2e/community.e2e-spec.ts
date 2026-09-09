@@ -2,7 +2,6 @@ import request from 'supertest';
 import { Comment } from 'src/modules/posts/entities/comment.entity';
 import { PostLike } from 'src/modules/posts/entities/post-like.entity';
 import { Post } from 'src/modules/posts/entities/post.entity';
-import { inject } from 'vitest';
 import {
   createE2eApplication,
   type E2eApplication,
@@ -14,7 +13,7 @@ describe('Community journey (e2e)', () => {
   let e2e: E2eApplication;
 
   beforeAll(async () => {
-    e2e = await createE2eApplication(inject('e2eDatabase'));
+    e2e = await createE2eApplication();
   });
 
   beforeEach(async () => {

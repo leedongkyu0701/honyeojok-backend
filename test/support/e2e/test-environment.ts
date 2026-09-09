@@ -1,10 +1,8 @@
-import type { IntegrationDatabaseConfig } from '../database/test-data-source';
+import type { TestDatabaseConfig } from '../database/test-data-source';
 
 const TEST_FRONTEND_ORIGIN = 'http://localhost:3000';
 
-export function applyE2eTestEnvironment(
-  database: IntegrationDatabaseConfig,
-): void {
+export function applyE2eTestEnvironment(database: TestDatabaseConfig): void {
   Object.assign(process.env, {
     NODE_ENV: 'test',
     APP_ENV: 'test',
