@@ -46,6 +46,9 @@ jobs:
       - name: Run PostgreSQL integration tests
         run: npm run test:integration
 
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
       - name: Run migrations against an empty PostgreSQL database
         env:
           DB_HOST: localhost

@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { inject } from 'vitest';
-import { createIntegrationDataSource } from '../helpers/integration-data-source';
+import { createIntegrationDataSource } from '../../support/database/test-data-source';
 
 describe('PostgreSQL migrations', () => {
   let dataSource: DataSource;

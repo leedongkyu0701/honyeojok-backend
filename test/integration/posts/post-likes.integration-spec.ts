@@ -3,9 +3,12 @@ import { inject } from 'vitest';
 import { PostLike } from 'src/modules/posts/entities/post-like.entity';
 import { Post } from 'src/modules/posts/entities/post.entity';
 import { PostLikesService } from 'src/modules/posts/likes/post-likes.service';
-import { createIntegrationDataSource } from '../helpers/integration-data-source';
-import { createTestPost, createTestUser } from '../helpers/fixtures';
-import { resetDatabase } from '../helpers/reset-database';
+import { createIntegrationDataSource } from '../../support/database/test-data-source';
+import {
+  createTestPost,
+  createTestUser,
+} from '../../support/database/fixtures';
+import { resetDatabase } from '../../support/database/reset-database';
 
 describe('PostLikesService with PostgreSQL', () => {
   let dataSource: DataSource;

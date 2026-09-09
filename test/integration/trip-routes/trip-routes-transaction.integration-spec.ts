@@ -9,9 +9,9 @@ import { TripRouteItem } from 'src/modules/trip-routes/entities/trip-route-item.
 import { TripRoute } from 'src/modules/trip-routes/entities/trip-route.entity';
 import { TripRoutesService } from 'src/modules/trip-routes/trip-routes.service';
 import { User } from 'src/modules/users/entities/user.entity';
-import { createIntegrationDataSource } from '../helpers/integration-data-source';
-import { createTestDestination } from '../helpers/fixtures';
-import { resetDatabase } from '../helpers/reset-database';
+import { createIntegrationDataSource } from '../../support/database/test-data-source';
+import { createTestDestination } from '../../support/database/fixtures';
+import { resetDatabase } from '../../support/database/reset-database';
 
 describe('TripRoutesService transaction', () => {
   let dataSource: DataSource;

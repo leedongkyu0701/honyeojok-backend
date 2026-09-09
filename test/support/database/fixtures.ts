@@ -107,7 +107,7 @@ export async function createTestMediaUpload(
   );
 }
 
-type TestUserOverrides = Partial<
+export type TestUserOverrides = Partial<
   Pick<
     User,
     'email' | 'provider' | 'providerId' | 'isDeleted' | 'nickName' | 'role'

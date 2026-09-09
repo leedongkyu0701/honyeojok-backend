@@ -1,8 +1,5 @@
 import type { TestProject } from 'vitest/node';
-import {
-  createIntegrationDataSource,
-  type IntegrationDatabaseConfig,
-} from '../support/database/test-data-source';
+import { createIntegrationDataSource } from '../support/database/test-data-source';
 import {
   getTestDatabaseConfig,
   startPostgresTestContainer,
@@ -10,13 +7,13 @@ import {
 
 export default async function setup(project: TestProject) {
   const container = await startPostgresTestContainer();
-  const config: IntegrationDatabaseConfig = getTestDatabaseConfig(container);
+  const config = getTestDatabaseConfig(container);
   const dataSource = createIntegrationDataSource(config);
 
   try {
     await dataSource.initialize();
     await dataSource.runMigrations();
-    project.provide('integrationDatabase', config);
+    project.provide('e2eDatabase', config);
   } catch (error) {
     await container.stop();
     throw error;

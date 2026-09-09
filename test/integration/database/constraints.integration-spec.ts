@@ -3,15 +3,15 @@ import { inject } from 'vitest';
 import { AuthProvider } from 'src/modules/auth/enums/auth-provider.enum';
 import { PostLike } from 'src/modules/posts/entities/post-like.entity';
 import { Bookmark } from 'src/modules/trip-routes/entities/bookmark.entity';
-import { createIntegrationDataSource } from '../helpers/integration-data-source';
+import { createIntegrationDataSource } from '../../support/database/test-data-source';
 import {
   createTestDestination,
   createTestMediaUpload,
   createTestPost,
   createTestTripRoute,
   createTestUser,
-} from '../helpers/fixtures';
-import { resetDatabase } from '../helpers/reset-database';
+} from '../../support/database/fixtures';
+import { resetDatabase } from '../../support/database/reset-database';
 
 describe('PostgreSQL constraints', () => {
   let dataSource: DataSource;
