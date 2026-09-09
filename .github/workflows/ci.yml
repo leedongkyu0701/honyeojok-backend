@@ -43,6 +43,9 @@ jobs:
       - name: Run quality checks
         run: npm run check
 
+      - name: Run PostgreSQL integration tests
+        run: npm run test:integration
+
       - name: Run migrations against an empty PostgreSQL database
         env:
           DB_HOST: localhost

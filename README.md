@@ -24,6 +24,11 @@
 - Render — Backend 배포
 - GitHub Actions — CI/CD
 
+## Testing
+
+- `npm test` runs fast Vitest unit tests without Docker.
+- `npm run test:integration` runs PostgreSQL 17 migration and persistence tests through Testcontainers; Docker must be running.
+
 ## Architecture
 
 ```text
