@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import type { MockedFunction } from 'vitest';
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/modules/users/users.service';
 import { authConfig } from 'src/config/auth.config';
@@ -56,7 +57,7 @@ async function getOAuthFailure(
 
 describe('AuthService', () => {
   let service: AuthService;
-  let fetchMock: jest.MockedFunction<typeof fetch>;
+  let fetchMock: MockedFunction<typeof fetch>;
   let originalFetch: typeof fetch;
 
   beforeEach(async () => {
@@ -73,14 +74,14 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     originalFetch = global.fetch;
-    fetchMock = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>();
+    fetchMock = vi.fn<typeof fetch>();
     global.fetch = fetchMock;
-    jest.spyOn(Math, 'random').mockReturnValue(0);
+    vi.spyOn(Math, 'random').mockReturnValue(0);
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('returns UserInfo after a successful timed request', async () => {

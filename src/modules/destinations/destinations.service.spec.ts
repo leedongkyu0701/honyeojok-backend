@@ -15,19 +15,19 @@ import type { CreateDestinationRequestDto } from './dto/request/create-destinati
 describe('DestinationsService', () => {
   let service: DestinationsService;
   const destinationRepository = {
-    find: jest.fn(),
+    find: vi.fn(),
     manager: {
-      transaction: jest.fn(),
+      transaction: vi.fn(),
     },
   };
   const redisCacheService = {
-    getJson: jest.fn(),
-    setJson: jest.fn(),
-    delete: jest.fn(),
+    getJson: vi.fn(),
+    setJson: vi.fn(),
+    delete: vi.fn(),
   };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

@@ -21,9 +21,9 @@ describe('AuthController', () => {
         { provide: authConfig.KEY, useValue: {} },
         { provide: AuthCookieService, useValue: {} },
         { provide: OAuthStateService, useValue: {} },
-        { provide: JwtAccessGuard, useValue: { canActivate: jest.fn() } },
-        { provide: JwtRefreshGuard, useValue: { canActivate: jest.fn() } },
-        { provide: OriginGuard, useValue: { canActivate: jest.fn() } },
+        { provide: JwtAccessGuard, useValue: { canActivate: vi.fn() } },
+        { provide: JwtRefreshGuard, useValue: { canActivate: vi.fn() } },
+        { provide: OriginGuard, useValue: { canActivate: vi.fn() } },
       ],
     }).compile();
 

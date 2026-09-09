@@ -7,12 +7,12 @@ import { User } from './entities/user.entity';
 describe('UsersService', () => {
   let service: UsersService;
   const userRepository = {
-    findOne: jest.fn(),
-    update: jest.fn(),
+    findOne: vi.fn(),
+    update: vi.fn(),
   };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,

@@ -8,18 +8,18 @@ import { Post } from '../entities/post.entity';
 
 describe('CommentsService', () => {
   let service: CommentsService;
-  const postRepository = { findOne: jest.fn() };
+  const postRepository = { findOne: vi.fn() };
   const commentRepository = {
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    find: jest.fn(),
-    update: jest.fn(),
+    findOne: vi.fn(),
+    create: vi.fn(),
+    save: vi.fn(),
+    find: vi.fn(),
+    update: vi.fn(),
   };
-  const userRepository = { findOne: jest.fn() };
+  const userRepository = { findOne: vi.fn() };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommentsService,

@@ -18,8 +18,8 @@ describe('PostsController', () => {
         { provide: PostsQueryService, useValue: {} },
         { provide: CommentsService, useValue: {} },
         { provide: PostLikesService, useValue: {} },
-        { provide: JwtAccessGuard, useValue: { canActivate: jest.fn() } },
-        { provide: JwtOptionalGuard, useValue: { canActivate: jest.fn() } },
+        { provide: JwtAccessGuard, useValue: { canActivate: vi.fn() } },
+        { provide: JwtOptionalGuard, useValue: { canActivate: vi.fn() } },
       ],
     }).compile();
 

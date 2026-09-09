@@ -7,18 +7,18 @@ import { Bookmark } from './entities/bookmark.entity';
 describe('BookmarksQueryService', () => {
   let service: BookmarksQueryService;
   const queryBuilder = {
-    leftJoinAndSelect: jest.fn(),
-    where: jest.fn(),
-    orderBy: jest.fn(),
-    skip: jest.fn(),
-    take: jest.fn(),
-    getManyAndCount: jest.fn(),
+    leftJoinAndSelect: vi.fn(),
+    where: vi.fn(),
+    orderBy: vi.fn(),
+    skip: vi.fn(),
+    take: vi.fn(),
+    getManyAndCount: vi.fn(),
   };
-  const bookmarkRepository = { createQueryBuilder: jest.fn() };
-  const userRepository = { findOne: jest.fn() };
+  const bookmarkRepository = { createQueryBuilder: vi.fn() };
+  const userRepository = { findOne: vi.fn() };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     Object.values(queryBuilder).forEach((mock) => {
       if (mock !== queryBuilder.getManyAndCount)
         mock.mockReturnValue(queryBuilder);

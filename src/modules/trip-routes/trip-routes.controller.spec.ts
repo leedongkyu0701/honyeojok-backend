@@ -13,9 +13,9 @@ describe('TripRoutesController', () => {
       controllers: [TripRoutesController],
       providers: [
         { provide: TripRoutesService, useValue: {} },
-        { provide: JwtAccessGuard, useValue: { canActivate: jest.fn() } },
-        { provide: JwtOptionalGuard, useValue: { canActivate: jest.fn() } },
-        { provide: RoleGuard, useValue: { canActivate: jest.fn() } },
+        { provide: JwtAccessGuard, useValue: { canActivate: vi.fn() } },
+        { provide: JwtOptionalGuard, useValue: { canActivate: vi.fn() } },
+        { provide: RoleGuard, useValue: { canActivate: vi.fn() } },
       ],
     }).compile();
 

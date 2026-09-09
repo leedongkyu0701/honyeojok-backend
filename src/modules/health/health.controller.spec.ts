@@ -7,11 +7,11 @@ import { HealthModule } from './health.module';
 describe('HealthController', () => {
   let controller: HealthController;
   const database = {
-    pingCheck: jest.fn(),
+    pingCheck: vi.fn(),
   };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [HealthModule],

@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import type { Mock } from 'vitest';
 import { ErrorCode } from 'src/common/exceptions/base.exception';
 import { storageConfig } from 'src/config/storage.config';
 import { R2Service } from 'src/infrastructure/storage/r2/r2.service';
@@ -12,29 +13,29 @@ import { UploadsService } from './uploads.service';
 describe('UploadsService', () => {
   let service: UploadsService;
   let repository: {
-    create: jest.Mock;
-    find: jest.Mock;
+    create: Mock;
+    find: Mock;
   };
   let manager: {
-    save: jest.Mock;
-    findOne: jest.Mock;
-    getRepository: jest.Mock;
+    save: Mock;
+    findOne: Mock;
+    getRepository: Mock;
   };
-  let r2Service: { createPresignedPutUrl: jest.Mock; getPublicUrl: jest.Mock };
+  let r2Service: { createPresignedPutUrl: Mock; getPublicUrl: Mock };
 
   beforeEach(async () => {
     repository = {
-      create: jest.fn((input) => input),
-      find: jest.fn(),
+      create: vi.fn((input) => input),
+      find: vi.fn(),
     };
     manager = {
-      save: jest.fn(),
-      findOne: jest.fn(),
-      getRepository: jest.fn(),
+      save: vi.fn(),
+      findOne: vi.fn(),
+      getRepository: vi.fn(),
     };
     r2Service = {
-      createPresignedPutUrl: jest.fn(),
-      getPublicUrl: jest.fn(),
+      createPresignedPutUrl: vi.fn(),
+      getPublicUrl: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -59,9 +60,13 @@ describe('UploadsService', () => {
     service = module.get<UploadsService>(UploadsService);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('creates PENDING rows with exact original keys and does not persist signed URLs', async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2026-09-01T00:00:00.000Z'));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-01T00:00:00.000Z'));
     r2Service.createPresignedPutUrl
       .mockResolvedValueOnce('https://signed.example/first')
       .mockResolvedValueOnce('https://signed.example/second');
@@ -96,7 +101,6 @@ describe('UploadsService', () => {
       unknown
     >[];
     expect(savedRows.every((row) => !('uploadUrl' in row))).toBe(true);
-    jest.useRealTimers();
   });
 
   it.each([

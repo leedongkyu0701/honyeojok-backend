@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import type { Mock } from 'vitest';
 import { PostsService } from './posts.service';
 import { Post } from './entities/post.entity';
 import { UploadsService } from 'src/modules/uploads/uploads.service';
@@ -12,27 +13,27 @@ import { MediaUpload } from 'src/modules/uploads/entities/media-upload.entity';
 
 describe('PostsService', () => {
   let service: PostsService;
-  let manager: { findOne: jest.Mock; create: jest.Mock; save: jest.Mock };
+  let manager: { findOne: Mock; create: Mock; save: Mock };
   let uploadsService: {
-    lockReadyUploadsForAttachment: jest.Mock;
-    getProcessedPublicUrl: jest.Mock;
-    markAttached: jest.Mock;
+    lockReadyUploadsForAttachment: Mock;
+    getProcessedPublicUrl: Mock;
+    markAttached: Mock;
   };
 
   beforeEach(async () => {
     manager = {
-      findOne: jest.fn(async (entity) =>
+      findOne: vi.fn(async (entity) =>
         entity === User ? ({ id: 1, nickName: '혼여족' } as User) : null,
       ),
-      create: jest.fn((entity, input) =>
+      create: vi.fn((entity, input) =>
         entity === Post ? ({ ...input, id: 100 } as Post) : input,
       ),
-      save: jest.fn(),
+      save: vi.fn(),
     };
     uploadsService = {
-      lockReadyUploadsForAttachment: jest.fn().mockResolvedValue([]),
-      getProcessedPublicUrl: jest.fn(),
-      markAttached: jest.fn(),
+      lockReadyUploadsForAttachment: vi.fn().mockResolvedValue([]),
+      getProcessedPublicUrl: vi.fn(),
+      markAttached: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

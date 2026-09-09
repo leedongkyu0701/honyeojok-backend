@@ -9,24 +9,24 @@ import { PostType } from './enums/post-type.enum';
 describe('PostsQueryService', () => {
   let service: PostsQueryService;
   const queryBuilder = {
-    leftJoinAndSelect: jest.fn(),
-    where: jest.fn(),
-    orderBy: jest.fn(),
-    take: jest.fn(),
-    skip: jest.fn(),
-    andWhere: jest.fn(),
-    getManyAndCount: jest.fn(),
+    leftJoinAndSelect: vi.fn(),
+    where: vi.fn(),
+    orderBy: vi.fn(),
+    take: vi.fn(),
+    skip: vi.fn(),
+    andWhere: vi.fn(),
+    getManyAndCount: vi.fn(),
   };
   const postRepository = {
-    createQueryBuilder: jest.fn(),
-    find: jest.fn(),
-    findAndCount: jest.fn(),
+    createQueryBuilder: vi.fn(),
+    find: vi.fn(),
+    findAndCount: vi.fn(),
   };
-  const postLikeRepository = { exists: jest.fn() };
-  const userRepository = { findOne: jest.fn() };
+  const postLikeRepository = { exists: vi.fn() };
+  const userRepository = { findOne: vi.fn() };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     Object.values(queryBuilder).forEach((mock) => {
       if (mock !== queryBuilder.getManyAndCount)
         mock.mockReturnValue(queryBuilder);

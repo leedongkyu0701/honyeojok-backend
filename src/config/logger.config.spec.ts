@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { Mock } from 'vitest';
 import { createPinoHttpOptions } from './logger.config';
 
 const loggerConfig = { level: 'info', pretty: false };
@@ -16,9 +17,9 @@ function request(overrides: Record<string, unknown> = {}): Request {
 
 function response(statusCode = 200): {
   response: Response;
-  setHeader: jest.Mock;
+  setHeader: Mock;
 } {
-  const setHeader = jest.fn();
+  const setHeader = vi.fn();
 
   return {
     response: { statusCode, setHeader } as unknown as Response,

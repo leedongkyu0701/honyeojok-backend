@@ -7,18 +7,18 @@ import { PostLike } from '../entities/post-like.entity';
 describe('PostLikesService', () => {
   let service: PostLikesService;
   const manager = {
-    findOne: jest.fn(),
-    exists: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
-    increment: jest.fn(),
-    delete: jest.fn(),
-    decrement: jest.fn(),
+    findOne: vi.fn(),
+    exists: vi.fn(),
+    create: vi.fn(),
+    save: vi.fn(),
+    increment: vi.fn(),
+    delete: vi.fn(),
+    decrement: vi.fn(),
   };
-  const dataSource = { transaction: jest.fn() };
+  const dataSource = { transaction: vi.fn() };
 
   beforeEach(async () => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     dataSource.transaction.mockImplementation(
       (callback: (entityManager: typeof manager) => Promise<unknown>) =>
         callback(manager),

@@ -11,7 +11,7 @@ describe('UsersController', () => {
       controllers: [UsersController],
       providers: [
         { provide: UsersService, useValue: {} },
-        { provide: JwtAccessGuard, useValue: { canActivate: jest.fn() } },
+        { provide: JwtAccessGuard, useValue: { canActivate: vi.fn() } },
       ],
     }).compile();
 

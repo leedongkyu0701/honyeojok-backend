@@ -3,11 +3,11 @@ import { R2Service } from './r2.service';
 
 describe('R2Service', () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('destroys the S3 client on application shutdown when uploads are enabled', () => {
-    const destroy = jest.spyOn(S3Client.prototype, 'destroy');
+    const destroy = vi.spyOn(S3Client.prototype, 'destroy');
     const service = new R2Service({
       imageUploadEnabled: true,
       r2: {
@@ -25,7 +25,7 @@ describe('R2Service', () => {
   });
 
   it('safely skips cleanup when uploads are disabled', () => {
-    const destroy = jest.spyOn(S3Client.prototype, 'destroy');
+    const destroy = vi.spyOn(S3Client.prototype, 'destroy');
     const service = new R2Service({
       imageUploadEnabled: false,
       r2: {},
