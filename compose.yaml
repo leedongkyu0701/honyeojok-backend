@@ -1,4 +1,13 @@
 services:
+  redis:
+    image: redis:7-alpine
+
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:17
 
@@ -73,6 +82,7 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"
+      REDIS_URL: redis://redis:6379
       LOG_PRETTY: "false"
 
     ports:

@@ -17,6 +17,10 @@ import { BaseException, ErrorCode } from 'src/common/exceptions/base.exception';
 import type { GeoPoint } from 'src/modules/spots/types/geo-point.type';
 import { SpotMapResponseDto } from './dto/response/spot-map.response.dto';
 import { SpotMapper } from './mappers/spot.mapper';
+import { RedisCacheService } from 'src/infrastructure/cache/redis/redis-cache.service';
+
+export const SPOTS_RECOMMENDED_CACHE_KEY = 'cache:spots:recommended:v1';
+export const SPOTS_RECOMMENDED_CACHE_TTL_SECONDS = 300;
 
 type FindNearbyByPointsArgs = {
   destinationId: number;
@@ -34,6 +38,7 @@ export class SpotsService {
     private readonly spotRepository: Repository<Spot>,
     @InjectRepository(Destination)
     private readonly destRepo: Repository<Destination>,
+    private readonly redisCacheService: RedisCacheService,
   ) {}
 
   async findByQuery(
@@ -124,6 +129,14 @@ export class SpotsService {
   }
 
   async findRecommended(): Promise<SpotCardResponseDto[]> {
+    const cached = await this.redisCacheService.getJson<SpotCardResponseDto[]>(
+      SPOTS_RECOMMENDED_CACHE_KEY,
+    );
+
+    if (cached !== null) {
+      return cached;
+    }
+
     const spots = await this.spotRepository.find({
       where: { isRecommended: true },
       relations: ['destination', 'tags'],
@@ -131,7 +144,15 @@ export class SpotsService {
       take: 50, // 추천 스팟을 내려주고 프론트에서 랜덤하게 10개정도 뽑아 사용하는 정책
     });
 
-    return spots.map((spot) => SpotMapper.toCard(spot));
+    const recommendedSpots = spots.map((spot) => SpotMapper.toCard(spot));
+
+    await this.redisCacheService.setJson(
+      SPOTS_RECOMMENDED_CACHE_KEY,
+      recommendedSpots,
+      SPOTS_RECOMMENDED_CACHE_TTL_SECONDS,
+    );
+
+    return recommendedSpots;
   }
 
   async findById(id: number): Promise<SpotDetailResponseDto> {
@@ -284,7 +305,7 @@ export class SpotsService {
   }
 
   async createOne(dto: CreateSpotRequestDto): Promise<Spot> {
-    return this.spotRepository.manager.transaction(async (m) => {
+    const spot = await this.spotRepository.manager.transaction(async (m) => {
       const spotRepo = m.getRepository(Spot);
       const destinationRepo = m.getRepository(Destination);
       const tagRepo = m.getRepository(Tag);
@@ -336,5 +357,9 @@ export class SpotsService {
 
       return spotRepo.save(spot);
     });
+
+    await this.redisCacheService.delete(SPOTS_RECOMMENDED_CACHE_KEY);
+
+    return spot;
   }
 }

@@ -2,12 +2,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ErrorCode } from 'src/common/exceptions/base.exception';
 import { Destination } from 'src/modules/destinations/entities/destination.entity';
+import { RedisCacheService } from 'src/infrastructure/cache/redis/redis-cache.service';
 import { Tag } from 'src/modules/tags/entities/tag.entity';
 import type { CreateSpotRequestDto } from './dto/request/create-spot.request.dto';
 import type { FindSpotsQuery } from './dto/query/find-spots.query.dto';
 import { SpotCategory } from './enums/spot-category.enum';
 import { Spot } from './entities/spot.entity';
-import { SpotsService } from './spots.service';
+import { SpotMapper } from './mappers/spot.mapper';
+import {
+  SPOTS_RECOMMENDED_CACHE_KEY,
+  SPOTS_RECOMMENDED_CACHE_TTL_SECONDS,
+  SpotsService,
+} from './spots.service';
 
 function createSpot(overrides: Partial<Spot> = {}): Spot {
   return {
@@ -52,9 +58,15 @@ describe('SpotsService', () => {
   const transactionDestinationRepository = { findOne: vi.fn() };
   const transactionTagRepository = { find: vi.fn() };
   const transactionManager = { getRepository: vi.fn() };
+  const redisCacheService = {
+    getJson: vi.fn(),
+    setJson: vi.fn(),
+    delete: vi.fn(),
+  };
 
   beforeEach(async () => {
     vi.resetAllMocks();
+    redisCacheService.getJson.mockResolvedValue(null);
     Object.values(queryBuilder).forEach((mock) => {
       if (
         mock !== queryBuilder.getManyAndCount &&
@@ -81,6 +93,7 @@ describe('SpotsService', () => {
           provide: getRepositoryToken(Destination),
           useValue: destinationRepository,
         },
+        { provide: RedisCacheService, useValue: redisCacheService },
       ],
     }).compile();
 
@@ -162,19 +175,53 @@ describe('SpotsService', () => {
     expect(result.etc[0]).toMatchObject({ category: SpotCategory.ETC });
   });
 
-  it('returns at most 50 recommended spots with their mapping dependencies', async () => {
+  it('returns the recommended spots from Redis without querying the repository on a cache hit', async () => {
+    const cached = [SpotMapper.toCard(createSpot({ isRecommended: true }))];
+    redisCacheService.getJson.mockResolvedValue(cached);
+
+    await expect(service.findRecommended()).resolves.toBe(cached);
+    expect(redisCacheService.getJson).toHaveBeenCalledWith(
+      SPOTS_RECOMMENDED_CACHE_KEY,
+    );
+    expect(spotRepository.find).not.toHaveBeenCalled();
+    expect(redisCacheService.setJson).not.toHaveBeenCalled();
+  });
+
+  it('queries and caches at most 50 recommended spots on a cache miss', async () => {
     const spot = createSpot({ isRecommended: true });
+    const expected = [SpotMapper.toCard(spot)];
     spotRepository.find.mockResolvedValue([spot]);
 
-    await expect(service.findRecommended()).resolves.toMatchObject([
-      { id: spot.id, destination: { slug: 'seoul' } },
-    ]);
+    await expect(service.findRecommended()).resolves.toEqual(expected);
     expect(spotRepository.find).toHaveBeenCalledWith({
       where: { isRecommended: true },
       relations: ['destination', 'tags'],
       order: { id: 'DESC' },
       take: 50,
     });
+    expect(redisCacheService.setJson).toHaveBeenCalledWith(
+      SPOTS_RECOMMENDED_CACHE_KEY,
+      expected,
+      SPOTS_RECOMMENDED_CACHE_TTL_SECONDS,
+    );
+  });
+
+  it('learning test: Cache Aside alone does not prevent a cold-cache stampede', async () => {
+    const spot = createSpot({ isRecommended: true });
+    const expected = [SpotMapper.toCard(spot)];
+    spotRepository.find.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => resolve([spot]), 10);
+        }),
+    );
+
+    // Learning-only: concurrent cold-cache misses are not coalesced.
+    await expect(
+      Promise.all(Array.from({ length: 20 }, () => service.findRecommended())),
+    ).resolves.toEqual(Array.from({ length: 20 }, () => expected));
+
+    expect(spotRepository.find).toHaveBeenCalledTimes(20);
   });
 
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
@@ -312,6 +359,33 @@ describe('SpotsService', () => {
     );
     expect(result.tags).toEqual([]);
     expect(transactionTagRepository.find).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the recommended cache only after the spot transaction commits', async () => {
+    const savedSpot = createSpot();
+    let commitTransaction: (spot: Spot) => void;
+    const transactionResult = new Promise<Spot>((resolve) => {
+      commitTransaction = resolve;
+    });
+    spotRepository.manager.transaction.mockReturnValue(transactionResult);
+
+    const result = service.createOne({
+      name: '새 스팟',
+      slug: 'new-spot',
+      summary: '요약',
+      description: '설명',
+      destinationSlug: 'seoul',
+    } as CreateSpotRequestDto);
+
+    expect(spotRepository.manager.transaction).toHaveBeenCalledTimes(1);
+    expect(redisCacheService.delete).not.toHaveBeenCalled();
+
+    commitTransaction!(savedSpot);
+
+    await expect(result).resolves.toBe(savedSpot);
+    expect(redisCacheService.delete).toHaveBeenCalledWith(
+      SPOTS_RECOMMENDED_CACHE_KEY,
+    );
   });
 
   it('rejects creation when any requested tag slug is unknown', async () => {
