@@ -34,7 +34,7 @@ services:
       LOG_PRETTY: "false"
 
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
 
     depends_on:
       redis:
