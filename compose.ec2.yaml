@@ -4,25 +4,27 @@ services:
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 10
 
-
   migrate:
-    image: honyeojok-backend:local
+    # image: honyeojok-backend:local 로컬일때
+    image: '${APP_IMAGE:?Set APP_IMAGE to the ECR image URI}'
+    # ECR 배포시
 
     env_file:
       - .env.local
 
-    command: ["npm", "run", "migration:run:deploy"]
+    command: ['npm', 'run', 'migration:run:deploy']
 
-    restart: "no"
-
+    restart: 'no'
 
   app:
-    image: honyeojok-backend:local
+    # image: honyeojok-backend:local 로컬일때
+    image: '${APP_IMAGE:?Set APP_IMAGE to the ECR image URI}'
+    # ECR 배포시
     init: true
     restart: unless-stopped
 
@@ -31,10 +33,10 @@ services:
 
     environment:
       REDIS_URL: redis://redis:6379
-      LOG_PRETTY: "false"
+      LOG_PRETTY: 'false'
 
     ports:
-      - "127.0.0.1:5001:5001"
+      - '127.0.0.1:5001:5001'
 
     depends_on:
       redis:
@@ -46,9 +48,9 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           "fetch('http://127.0.0.1:5001/health/ready').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
         ]
       interval: 10s
