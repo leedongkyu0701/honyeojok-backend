@@ -1,30 +1,120 @@
-name: AWS Lab Auth
+name: AWS Lab Image
 
 on:
   push:
     branches:
       - infra/aws-manual-lab
-    paths:
-      - .github/workflows/aws-lab-auth.yml
+
+concurrency:
+  group: aws-lab-deploy
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  check-aws-identity:
+  build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: aws-lab
 
     permissions:
       contents: read
       id-token: write
 
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality checks
+        run: npm run check
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+
       - name: Authenticate to AWS using OIDC
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Show AWS identity
-        run: aws sts get-caller-identity
+      - name: Prepare image address
+        id: image
+        run: |
+          set -euo pipefail
+
+          ACCOUNT_ID="$(aws sts get-caller-identity \
+            --query Account --output text)"
+
+          REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          REPOSITORY_URI="${REGISTRY}/${ECR_REPOSITORY}"
+          TAG="${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          echo "registry=${REGISTRY}" >> "$GITHUB_OUTPUT"
+          echo "repository_uri=${REPOSITORY_URI}" >> "$GITHUB_OUTPUT"
+          echo "tagged_image=${REPOSITORY_URI}:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.image.outputs.registry }}
+        run: |
+          set -euo pipefail
+
+          aws ecr get-login-password --region "$AWS_REGION" |
+            docker login \
+              --username AWS \
+              --password-stdin "$ECR_REGISTRY"
+
+      - name: Build and push image
+        id: publish
+        env:
+          TAGGED_IMAGE: ${{ steps.image.outputs.tagged_image }}
+          REPOSITORY_URI: ${{ steps.image.outputs.repository_uri }}
+        run: |
+          set -euo pipefail
+
+          docker buildx build \
+            --platform linux/amd64 \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "$TAGGED_IMAGE" \
+            --metadata-file "$RUNNER_TEMP/image-metadata.json" \
+            --push \
+            .
+
+          DIGEST="$(jq -er '."containerimage.digest"' \
+            "$RUNNER_TEMP/image-metadata.json")"
+
+          APP_IMAGE="${REPOSITORY_URI}@${DIGEST}"
+
+          echo "app_image=${APP_IMAGE}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "Commit: ${GITHUB_SHA}"
+            echo
+            echo "Image tag: ${TAGGED_IMAGE}"
+            echo
+            echo "APP_IMAGE: ${APP_IMAGE}"
+          } >> "$GITHUB_STEP_SUMMARY"
