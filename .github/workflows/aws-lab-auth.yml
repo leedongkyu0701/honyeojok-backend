@@ -1,4 +1,4 @@
-name: AWS Lab Image
+name: AWS Lab Deploy
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: aws-lab
 
     permissions:
@@ -42,6 +42,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Test deployment failure and recovery paths offline
+        run: node --test test/deployment/*.test.mjs
 
       - name: Run quality checks
         run: npm run check
@@ -118,28 +121,26 @@ jobs:
             echo
             echo "APP_IMAGE: ${APP_IMAGE}"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Send SSM connection check
+
+      # Delivery: 120s; remote execution: 900s; polling: 1200s.
+      # Step/job timeouts leave room for API calls, tests, builds and recovery.
+      - name: Deploy on EC2 and wait for remote result
+        timeout-minutes: 24
         env:
           EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          EC2_APP_DIR: ${{ vars.EC2_APP_DIR }}
+          APP_IMAGE: ${{ steps.publish.outputs.app_image }}
+        run: node scripts/deploy-ssm.mjs
+
+      - name: Check external HTTPS readiness
+        timeout-minutes: 3
         run: |
           set -euo pipefail
-
-          : "${EC2_INSTANCE_ID:?Set EC2_INSTANCE_ID in aws-lab variables}"
-
-          COMMAND_ID="$(aws ssm send-command \
-            --region "$AWS_REGION" \
-            --instance-ids "$EC2_INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
-            --comment "GitHub Actions AWS lab connection check" \
-            --timeout-seconds 60 \
-            --parameters '{"commands":["set -eu","whoami","hostname","docker --version","docker compose version"],"executionTimeout":["60"]}' \
-            --query 'Command.CommandId' \
-            --output text)"
-
-          echo "SSM Command ID: ${COMMAND_ID}"
-
-          {
-            echo
-            echo "SSM connection check command: ${COMMAND_ID}"
-            echo "Target instance: ${EC2_INSTANCE_ID}"
-          } >> "$GITHUB_STEP_SUMMARY"
+          # An ingress/DNS/TLS failure fails this job, without rolling back the app.
+          STATUS="$(curl --fail --silent --show-error \
+            --proto '=https' --connect-timeout 5 --max-time 10 \
+            --retry 6 --retry-delay 5 --retry-connrefused --retry-all-errors \
+            --output /dev/null --write-out '%{http_code}' \
+            https://api-lab.honyeojok.com/health/ready)"
+          [[ "$STATUS" = 200 ]] || { echo "External readiness returned HTTP $STATUS (expected 200)." >&2; exit 1; }
+          echo 'External HTTPS readiness succeeded.' >> "$GITHUB_STEP_SUMMARY"

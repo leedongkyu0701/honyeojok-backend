@@ -14,3 +14,6 @@ workers
 *.log
 .DS_Store
 README.md
+
+# EC2 deployment state and temporary credentials
+.deploy/
