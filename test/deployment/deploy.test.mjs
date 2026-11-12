@@ -515,9 +515,7 @@ test('workflow: external HTTP 200 succeeds; redirect and HTTP error fail', () =>
     '      - name: Check external HTTPS readiness\n',
   )[1];
   assert.ok(section);
-  const command = section
-    .split('        run: |\n')[1]
-    .replace(/^          /gm, '');
+  const command = section.split('        run: |\n')[1].replace(/^ {10}/gm, '');
   const base = fs.mkdtempSync(join(tmpdir(), 'https-test-'));
   try {
     fs.writeFileSync(

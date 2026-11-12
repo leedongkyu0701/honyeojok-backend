@@ -15,7 +15,7 @@
     "start": "node dist/main.js",
     "start:dev": "cross-env NODE_ENV=development APP_ENV=local nest start --watch --env-file .env.local",
     "start:debug": "cross-env NODE_ENV=development APP_ENV=local nest start --debug --watch --env-file .env.local",
-    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "lint": "eslint \"{src,test}/**/*.ts\" \"scripts/**/*.mjs\" \"test/deployment/**/*.{mjs,cjs}\"",
     "lint:fix": "npm run lint -- --fix",
     "test": "cross-env NODE_ENV=test APP_ENV=test vitest run",
     "test:typecheck": "tsc --noEmit -p tsconfig.test.json",

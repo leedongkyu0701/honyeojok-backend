@@ -29,7 +29,9 @@ export function settings(environ) {
   const config = Object.fromEntries(
     names.map((name) => [name, environ[name] || '']),
   );
-  if (names.some((name) => /[\x00-\x1f\x7f]/.test(config[name]))) {
+  // eslint-disable-next-line no-control-regex -- Reject control characters in deployment arguments.
+  const controlCharacters = /[\x00-\x1f\x7f]/;
+  if (names.some((name) => controlCharacters.test(config[name]))) {
     throw new DeployError(
       'Deployment variables must not contain control characters.',
     );
@@ -46,7 +48,7 @@ export function settings(environ) {
   if (
     !config.EC2_APP_DIR.startsWith('/') ||
     config.EC2_APP_DIR === '/' ||
-    /[\x00-\x1f\x7f]/.test(config.EC2_APP_DIR)
+    controlCharacters.test(config.EC2_APP_DIR)
   ) {
     throw new DeployError(
       'EC2_APP_DIR must be an absolute non-root path without control characters.',
@@ -96,7 +98,7 @@ export function parameters(config, root = ROOT) {
     'chmod 700 "$deploy_tmp" "$deploy_tmp/deploy-ec2.sh"',
     'set +e',
     'sudo -u ubuntu -H -- env -i HOME=/home/ubuntu USER=ubuntu LOGNAME=ubuntu ' +
-      `PATH=/usr/local/bin:/usr/bin:/bin bash "$deploy_tmp/deploy-ec2.sh" ${args} </dev/null`,
+      `PATH=/usr/local/bin:/usr/bin:/bin:/snap/bin bash "$deploy_tmp/deploy-ec2.sh" ${args} </dev/null`,
     'deploy_status=$?',
     'exit "$deploy_status"',
   ].join('\n');
