@@ -1,0 +1,30 @@
+name: AWS Lab Auth
+
+on:
+  push:
+    branches:
+      - infra/aws-manual-lab
+    paths:
+      - .github/workflows/aws-lab-auth.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check-aws-identity:
+    runs-on: ubuntu-latest
+    environment: aws-lab
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate to AWS using OIDC
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Show AWS identity
+        run: aws sts get-caller-identity
