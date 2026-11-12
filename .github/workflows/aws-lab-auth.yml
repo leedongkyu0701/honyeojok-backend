@@ -118,3 +118,28 @@ jobs:
             echo
             echo "APP_IMAGE: ${APP_IMAGE}"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Send SSM connection check
+        env:
+          EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${EC2_INSTANCE_ID:?Set EC2_INSTANCE_ID in aws-lab variables}"
+
+          COMMAND_ID="$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "GitHub Actions AWS lab connection check" \
+            --timeout-seconds 60 \
+            --parameters '{"commands":["set -eu","whoami","hostname","docker --version","docker compose version"],"executionTimeout":["60"]}' \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          echo "SSM Command ID: ${COMMAND_ID}"
+
+          {
+            echo
+            echo "SSM connection check command: ${COMMAND_ID}"
+            echo "Target instance: ${EC2_INSTANCE_ID}"
+          } >> "$GITHUB_STEP_SUMMARY"
