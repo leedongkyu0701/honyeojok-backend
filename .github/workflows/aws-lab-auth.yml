@@ -20,7 +20,7 @@ jobs:
       id-token: write
 
     steps:
-              - name: Inspect OIDC claims
+      - name: Inspect OIDC claims
         run: |
           python3 - <<'PY'
           import os
@@ -47,6 +47,7 @@ jobs:
           for key in ["aud", "sub", "ref", "environment", "repository"]:
               print(f"{key}: {claims.get(key)}")
           PY
+
       - name: Authenticate to AWS using OIDC
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
