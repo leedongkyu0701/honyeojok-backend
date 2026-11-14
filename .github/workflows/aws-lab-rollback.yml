@@ -1,0 +1,103 @@
+name: AWS Lab Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_image:
+        description: 'Full ECR digest from a successful AWS Lab Deploy summary (repository@sha256:...)'
+        required: true
+        type: string
+
+concurrency:
+  group: aws-lab-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    if: github.ref == 'refs/heads/infra/aws-manual-lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: aws-lab
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      EC2_APP_DIR: ${{ vars.EC2_APP_DIR }}
+      APP_IMAGE: ${{ inputs.app_image }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Validate rollback input
+        id: validate
+        run: |
+          node --input-type=module <<'NODE'
+          import { settings } from './scripts/deploy-ssm.mjs';
+          settings(process.env, 'rollback');
+          NODE
+
+      - name: Authenticate to AWS using OIDC
+        id: auth
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Same delivery/execution/polling limits as deploy; no build or migration.
+      - name: Roll back on EC2 and wait for remote result
+        id: rollback
+        timeout-minutes: 24
+        run: node scripts/deploy-ssm.mjs rollback
+
+      - name: Check external HTTPS readiness
+        id: https
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          # External failure does not invoke another rollback.
+          STATUS="$(curl --fail --silent --show-error \
+            --proto '=https' --connect-timeout 5 --max-time 10 \
+            --retry 6 --retry-delay 5 --retry-connrefused --retry-all-errors \
+            --output /dev/null --write-out '%{http_code}' \
+            https://api-lab.honyeojok.com/health/ready)"
+          [[ "$STATUS" = 200 ]] || { echo "External readiness returned HTTP $STATUS (expected 200)." >&2; exit 1; }
+
+      - name: Write rollback result
+        if: ${{ always() }}
+        env:
+          SSM_COMMAND_ID: ${{ steps.rollback.outputs.command_id }}
+          VALIDATION_RESULT: ${{ steps.validate.outcome }}
+          AUTH_RESULT: ${{ steps.auth.outcome }}
+          REMOTE_RESULT: ${{ steps.rollback.outcome }}
+          HTTPS_RESULT: ${{ steps.https.outcome }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const e = process.env;
+          const escape = value => String(value || 'not available')
+            .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+          const success = [e.VALIDATION_RESULT, e.AUTH_RESULT, e.REMOTE_RESULT, e.HTTPS_RESULT]
+            .every(result => result === 'success');
+          const lines = [
+            ['Requested image', e.APP_IMAGE], ['Target instance', e.EC2_INSTANCE_ID],
+            ['SSM Command ID', e.SSM_COMMAND_ID], ['Validation', e.VALIDATION_RESULT],
+            ['OIDC', e.AUTH_RESULT], ['SSM step', e.REMOTE_RESULT], ['External HTTPS', e.HTTPS_RESULT],
+            ['Result', success ? 'SUCCESS' : 'FAILED / INCOMPLETE — inspect SSM and step logs'],
+          ];
+          appendFileSync(e.GITHUB_STEP_SUMMARY, '\n' + lines.map(([key, value]) =>
+            `${key}: <code>${escape(value)}</code>\n`).join('\n'));
+          NODE
