@@ -63,7 +63,8 @@ async function main() {
     console.log('MOCK_AUTH_TOKEN');
   } else if (name === 'curl') {
     if (
-      (mode === 'old_ready' && state.runtime === 'old') ||
+      ((mode === 'old_ready' || state.oldReady === false) &&
+        state.runtime === 'old') ||
       ([
         'ready',
         'rollback_up',
@@ -114,7 +115,13 @@ async function main() {
           (mode === 'health' && state.runtime === 'new') ||
           (mode === 'redis' && args.at(-1) === 'redis-id') ||
           (mode === 'rollback_health' && state.runtime === 'rollback');
-        console.log(unhealthy ? 'running/unhealthy' : 'running/healthy');
+        console.log(
+          state.runtime === 'old' && state.oldState
+            ? state.oldState
+            : unhealthy
+              ? 'running/unhealthy'
+              : 'running/healthy',
+        );
       }
     } else if (args[0] === 'compose') {
       assert.deepEqual(args.slice(1, 7), [
@@ -127,14 +134,28 @@ async function main() {
       ]);
       const op = args[7];
       if (op === 'ps') {
-        if (!(mode === 'missing_app' && args.at(-1) === 'app'))
+        if (
+          !(
+            mode === 'missing_app' &&
+            state.runtime === 'old' &&
+            args.at(-1) === 'app'
+          )
+        )
           console.log(
             args.at(-1) === 'redis' ? 'redis-id' : 'app-' + state.runtime,
           );
       } else if (op === 'pull') {
-        assert.deepEqual(args.slice(-2), ['app', 'migrate']);
+        assert.deepEqual(
+          args.slice(8),
+          state.operation === 'rollback' ? ['app'] : ['app', 'migrate'],
+        );
         if (mode === 'pull') fail();
       } else if (op === 'run') {
+        assert.notEqual(
+          state.operation,
+          'rollback',
+          'Manual rollback must never run migrations',
+        );
         assert.equal(state.runtime, 'old');
         assert.equal(args.at(-1), 'migrate');
         assert.ok(args.includes('--no-deps') && args.includes('--pull'));

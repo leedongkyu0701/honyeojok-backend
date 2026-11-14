@@ -24,7 +24,28 @@ export const POLL_INTERVAL = 5_000;
 
 export class DeployError extends Error {}
 
-export function settings(environ) {
+const SCRIPTS = Object.freeze({
+  deploy: 'scripts/deploy-ec2.sh',
+  rollback: 'scripts/rollback-ec2.sh',
+});
+
+function scriptFor(mode) {
+  if (!Object.hasOwn(SCRIPTS, mode)) {
+    throw new DeployError('Mode must be deploy or rollback.');
+  }
+  return SCRIPTS[mode];
+}
+
+export function modeFromArgs(args) {
+  if (args.length > 1)
+    throw new DeployError('Usage: deploy-ssm.mjs [deploy|rollback]');
+  const mode = args[0] ?? 'deploy';
+  scriptFor(mode);
+  return mode;
+}
+
+export function settings(environ, mode = 'deploy') {
+  scriptFor(mode);
   const names = ['AWS_REGION', 'EC2_INSTANCE_ID', 'EC2_APP_DIR', 'APP_IMAGE'];
   const config = Object.fromEntries(
     names.map((name) => [name, environ[name] || '']),
@@ -62,6 +83,17 @@ export function settings(environ) {
       'APP_IMAGE must be a private ECR digest in AWS_REGION.',
     );
   }
+  if (
+    mode === 'rollback' &&
+    (!/^939898395322\.dkr\.ecr\.ap-northeast-2\.amazonaws\.com\/honyeojok-backend-lab@sha256:[a-f0-9]{64}$/.test(
+      config.APP_IMAGE,
+    ) ||
+      environ.ECR_REPOSITORY !== 'honyeojok-backend-lab')
+  ) {
+    throw new DeployError(
+      'Rollback requires a digest from 939898395322/ap-northeast-2/honyeojok-backend-lab and matching ECR_REPOSITORY.',
+    );
+  }
   return config;
 }
 
@@ -71,10 +103,10 @@ export function shellQuote(value) {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
-export function parameters(config, root = ROOT) {
-  const encoded = readFileSync(join(root, 'scripts/deploy-ec2.sh')).toString(
-    'base64',
-  );
+export function parameters(config, root = ROOT, mode = 'deploy') {
+  const script = scriptFor(mode);
+  const remoteName = script.slice('scripts/'.length);
+  const encoded = readFileSync(join(root, script)).toString('base64');
   const checksum = createHash('sha256')
     .update(readFileSync(join(root, 'compose.ec2.yaml')))
     .digest('hex');
@@ -93,12 +125,12 @@ export function parameters(config, root = ROOT) {
     'umask 077',
     'deploy_tmp="$(mktemp -d /tmp/honyeojok-deploy.XXXXXXXXXX)"',
     'trap \'rm -rf -- "$deploy_tmp"\' 0',
-    `printf '%s' ${shellQuote(encoded)} | base64 --decode > "$deploy_tmp/deploy-ec2.sh"`,
+    `printf '%s' ${shellQuote(encoded)} | base64 --decode > "$deploy_tmp/${remoteName}"`,
     'chown -R ubuntu:ubuntu "$deploy_tmp"',
-    'chmod 700 "$deploy_tmp" "$deploy_tmp/deploy-ec2.sh"',
+    `chmod 700 "$deploy_tmp" "$deploy_tmp/${remoteName}"`,
     'set +e',
     'sudo -u ubuntu -H -- env -i HOME=/home/ubuntu USER=ubuntu LOGNAME=ubuntu ' +
-      `PATH=/usr/local/bin:/usr/bin:/bin:/snap/bin bash "$deploy_tmp/deploy-ec2.sh" ${args} </dev/null`,
+      `PATH=/usr/local/bin:/usr/bin:/bin:/snap/bin bash "$deploy_tmp/${remoteName}" ${args} </dev/null`,
     'deploy_status=$?',
     'exit "$deploy_status"',
   ].join('\n');
@@ -226,23 +258,30 @@ export async function observe(
 
 export async function main({
   environ = process.env,
+  mode = 'deploy',
   root = ROOT,
   callAws = aws,
   observeCommand = observe,
   log = console.log,
 } = {}) {
-  const config = settings(environ);
+  const config = settings(environ, mode);
   if (!environ.RUNNER_TEMP || !environ.GITHUB_STEP_SUMMARY) {
     throw new DeployError('RUNNER_TEMP and GITHUB_STEP_SUMMARY are required.');
   }
   // Keep transfer files outside the Docker build context.
   const payload = join(environ.RUNNER_TEMP, 'ec2-deploy-parameters.json');
-  writeFileSync(payload, JSON.stringify(parameters(config, root)), {
+  writeFileSync(payload, JSON.stringify(parameters(config, root, mode)), {
     mode: 0o600,
   });
   chmodSync(payload, 0o600);
   let commandId;
+  let resultSummary =
+    'Submission failed or not confirmed; inspect Run Command before retrying.';
   try {
+    appendFileSync(
+      environ.GITHUB_STEP_SUMMARY,
+      `\nOperation: ${mode}\n\nTarget instance: \`${config.EC2_INSTANCE_ID}\`\n\nRequested image: \`${config.APP_IMAGE}\`\n`,
+    );
     let result;
     try {
       result = callAws(config, [
@@ -253,7 +292,7 @@ export async function main({
         '--document-name',
         'AWS-RunShellScript',
         '--comment',
-        'GitHub Actions AWS lab deployment',
+        `GitHub Actions AWS lab ${mode}`,
         '--timeout-seconds',
         String(DELIVERY_TIMEOUT),
         '--parameters',
@@ -279,6 +318,11 @@ export async function main({
       throw new DeployError('SSM returned an invalid Command ID.');
     }
     commandId = returnedId;
+    resultSummary =
+      'Remote execution failed or not confirmed; inspect the SSM Command ID.';
+    if (environ.GITHUB_OUTPUT) {
+      appendFileSync(environ.GITHUB_OUTPUT, `command_id=${commandId}\n`);
+    }
     log(`SSM Command ID: ${commandId}\nAPP_IMAGE: ${config.APP_IMAGE}`);
     appendFileSync(
       environ.GITHUB_STEP_SUMMARY,
@@ -286,6 +330,7 @@ export async function main({
         `Deployment image: \`${config.APP_IMAGE}\`\n`,
     );
     await observeCommand(config, commandId, { callAws, log });
+    resultSummary = 'Remote execution succeeded (Success, exit code 0).';
   } finally {
     if (commandId) {
       log(
@@ -294,6 +339,10 @@ export async function main({
       );
     }
     unlinkSync(payload);
+    appendFileSync(
+      environ.GITHUB_STEP_SUMMARY,
+      `\nSSM result: ${resultSummary}\n`,
+    );
   }
 }
 
@@ -301,8 +350,10 @@ if (
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  main().catch((error) => {
+  try {
+    await main({ mode: modeFromArgs(process.argv.slice(2)) });
+  } catch (error) {
     console.error(`ERROR: ${error.message}`);
     process.exitCode = 1;
-  });
+  }
 }

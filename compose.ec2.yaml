@@ -10,7 +10,8 @@ services:
       retries: 10
 
   migrate:
-    # image: honyeojok-backend:local 로컬일때
+    # image: honyeojok-backend:local 
+    # 로컬일때
     image: '${APP_IMAGE:?Set APP_IMAGE to the ECR image URI}'
     # ECR 배포시
 
@@ -22,7 +23,8 @@ services:
     restart: 'no'
 
   app:
-    # image: honyeojok-backend:local 로컬일때
+    # image: honyeojok-backend:local 
+    # 로컬일때
     image: '${APP_IMAGE:?Set APP_IMAGE to the ECR image URI}'
     # ECR 배포시
     init: true
